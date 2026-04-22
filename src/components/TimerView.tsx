@@ -9,6 +9,7 @@ import { Digits } from "./Timer/Digits";
 import { HandIndicators } from "./Timer/HandIndicators";
 import { TimerScreen } from "./Timer/TimerScreen";
 import { Stats } from "./Timer/Stats";
+import { History } from "./Timer/History";
 import styles from "./TimerView.module.css";
 
 export function TimerView() {
@@ -30,7 +31,7 @@ export function TimerView() {
       />
 
       <header className={styles.header}>
-        <span className={styles.title}>RUBIX · STACKMAT</span>
+        <span className={styles.title}>RUBIX</span>
       </header>
 
       <main className={styles.center}>
@@ -40,14 +41,13 @@ export function TimerView() {
         </TimerScreen>
       </main>
 
-      <p className={styles.hint}>
-        Place both hands on pads · hold 500ms · lift to start. Spacebar as
-        fallback.
-      </p>
-
       <footer className={styles.statsBar}>
         <Stats />
       </footer>
+
+      <aside className={styles.historyBox}>
+        <History />
+      </aside>
     </div>
   );
 }
