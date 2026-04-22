@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="./rubix_timer_logo_1776871590420.png" width="300" alt="Rubix Logo">
+  <img src="./assets/image.png" width="600" alt="Rubix Logo">
 </p>
 
-<h1 align="center">Rubix Stackmat Timer</h1>
+<h1 align="center">Rubix Timer</h1>
 
 <p align="center">
   <strong>The Professional AI-Powered Speedcubing Timer with Immersive HUD Experience.</strong>
