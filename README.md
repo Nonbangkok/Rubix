@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<p align="center">
+  <img src="./rubix_timer_logo_1776871590420.png" width="300" alt="Rubix Logo">
+</p>
 
-## Getting Started
+<h1 align="center">Rubix Stackmat Timer</h1>
 
-First, run the development server:
+<p align="center">
+  <strong>The Professional AI-Powered Speedcubing Timer with Immersive HUD Experience.</strong>
+</p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-14+-black?style=for-the-badge&logo=next.js" alt="Next.js">
+  <img src="https://img.shields.io/badge/TypeScript-Ready-blue?style=for-the-badge&logo=typescript" alt="TypeScript">
+  <img src="https://img.shields.io/badge/MediaPipe-Vision-00e5ff?style=for-the-badge" alt="MediaPipe">
+  <img src="https://img.shields.io/badge/Vercel-Deployed-black?style=for-the-badge&logo=vercel" alt="Vercel">
+</p>
+
+---
+
+## ✨ Features
+
+- 🖐️ **AI Hand Tracking**: Powered by MediaPipe Hands for professional Stackmat-style interaction.
+- ⚡ **Instant Response**: Optimized "Density-based" detection for millisecond-precision starts and stops.
+- 📺 **Immersive HUD UI**: Full-screen camera background with elegant Glassmorphism floating overlays.
+- 🎭 **Dynamic Animations**: Smooth scale-and-center transitions when the timer is running to maximize focus.
+- 📊 **Solve History & Stats**: Track your PB, Ao5, and Ao12 in real-time with an elegant sidebar history.
+- 📱 **Responsive Design**: Works on both desktop and mobile (Landscape orientation recommended).
+
+---
+
+## 🚀 Quick Start
+
+### 1. Installation
+Clone the project and install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/nonbangkok/Rubix.git
+cd Rubix
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Run Locally
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) and grant camera permissions.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠 Tech Stack
 
-## Learn More
+- **Framework**: [Next.js 14+](https://nextjs.org/) (App Router)
+- **Vision Engine**: [MediaPipe Hands](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker) (Running in Web Workers)
+- **State Management**: [Zustand](https://github.com/pmndrs/zustand)
+- **Styling**: Vanilla CSS Modules (Glassmorphism & Neon Glow)
+- **Language**: TypeScript (Strict Mode)
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📖 How to Use
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Setup**: Place your camera so your hands are visible on the bottom part of the screen.
+2. **Arming**: Place both hands on the virtual "Red Pads" shown in the camera feed.
+3. **Ready**: Wait for the pads/timer to turn **Green**.
+4. **Solve**: Lift your hands to start the timer.
+5. **Stop**: Place both hands back on the pads immediately after solving to stop the clock.
+6. **Reset**: Lift your hands again to return to IDLE state.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🤝 Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Contributions are welcome! Please check our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to get started.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<p align="center">Made with ❤️ for the Speedcubing Lover</p>
