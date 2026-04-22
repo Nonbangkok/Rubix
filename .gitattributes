@@ -1,0 +1,3 @@
+# Ignore MediaPipe WASM glue code from language statistics
+public/mediapipe/**/*.js linguist-vendored
+public/mediapipe/**/*.wasm linguist-vendored
