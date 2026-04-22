@@ -25,11 +25,14 @@ export function useTimerDriver(vision: VisionState): void {
   const phase = useTimerStore((s) => s.phase);
 
   // Vision → store
-  const leftSmoothed = vision.smoothedZones.left;
-  const rightSmoothed = vision.smoothedZones.right;
+  // Use raw zones for instant stop when running, smoothed for stable arming
+  const currentZones = phase === "RUNNING" ? vision.rawZones : vision.smoothedZones;
+  const left = currentZones.left;
+  const right = currentZones.right;
+
   useEffect(() => {
-    handlePad(leftSmoothed, rightSmoothed, performance.now());
-  }, [leftSmoothed, rightSmoothed, handlePad]);
+    handlePad(left, right, performance.now());
+  }, [left, right, handlePad]);
 
   // Spacebar → store (treated as both-hands-on while held)
   useEffect(() => {
