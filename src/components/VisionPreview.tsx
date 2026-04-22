@@ -99,14 +99,6 @@ export function VisionPreview({ state, videoRef, className }: Props) {
         className="absolute inset-0 w-full h-full object-cover -scale-x-100"
       />
       <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.65) 70%, rgba(0,0,0,0.92) 100%)",
-        }}
-      />
-      <div className="absolute inset-0 bg-black/25" />
-      <div
         className="absolute top-4 right-4 text-[10px] font-mono uppercase tracking-[0.3em] text-white/65 bg-black/45 backdrop-blur px-3 py-1 rounded-full border border-white/10"
         title={state.error ?? undefined}
       >
