@@ -1,4 +1,4 @@
-export type NormalizedPoint = { x: number; y: number };
+export type NormalizedPoint = { x: number; y: number; z: number };
 
 export type HandLandmarks = NormalizedPoint[];
 

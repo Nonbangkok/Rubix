@@ -23,6 +23,9 @@ async function init(): Promise<void> {
     baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
     runningMode: "VIDEO",
     numHands: 2,
+    minHandDetectionConfidence: 0.4,
+    minHandPresenceConfidence: 0.4,
+    minTrackingConfidence: 0.4,
   });
 }
 
@@ -42,7 +45,7 @@ scope.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
       const result = landmarker.detectForVideo(msg.bitmap, msg.timestamp);
       msg.bitmap.close();
       const hands: HandLandmarks[] = result.landmarks.map((hand) =>
-        hand.map((p) => ({ x: p.x, y: p.y })),
+        hand.map((p) => ({ x: p.x, y: p.y, z: p.z })),
       );
       post({ type: "landmarks", hands, timestamp: msg.timestamp });
     }

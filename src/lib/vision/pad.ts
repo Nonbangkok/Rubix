@@ -12,14 +12,24 @@ export function pointInZone(p: NormalizedPoint, zone: ZoneRect): boolean {
   return p.x >= zone.x0 && p.x <= zone.x1 && p.y >= zone.y0 && p.y <= zone.y1;
 }
 
-// Per plan: > 2 of landmarks {0, 5, 17} must be inside the zone.
+// Pro-logic: Check density of landmarks in the zone and depth (Z).
+// Much more stable than checking specific indices.
+const DENSITY_THRESHOLD = 6; // At least 6 of 21 points must be in zone
+const MAX_DEPTH = 0.15;      // Ignore hands too far from camera
+
 export function isHandOnPad(hand: HandLandmarks, zone: ZoneRect): boolean {
-  let inside = 0;
-  for (const idx of PAD_LANDMARK_INDICES) {
-    const p = hand[idx];
-    if (p && pointInZone(p, zone)) inside++;
+  let pointsInZone = 0;
+  
+  for (const p of hand) {
+    // MediaPipe Z is relative, but we can use it to filter background noise
+    if (p.z > MAX_DEPTH) continue; 
+    
+    if (pointInZone(p, zone)) {
+      pointsInZone++;
+    }
   }
-  return inside > 2;
+
+  return pointsInZone >= DENSITY_THRESHOLD;
 }
 
 export function rawZoneState(hands: HandLandmarks[]): PadZoneState {
@@ -35,7 +45,7 @@ export function rawZoneState(hands: HandLandmarks[]): PadZoneState {
 
 // State must be consistent for >= 3 frames before it's emitted. See CLAUDE.md.
 export class ZoneSmoother {
-  private static readonly REQUIRED_FRAMES = 3;
+  private static readonly REQUIRED_FRAMES = 2;
   private leftCandidate = false;
   private rightCandidate = false;
   private leftStreak = 0;
