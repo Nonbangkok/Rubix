@@ -1,0 +1,70 @@
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.75rem, 2.5vw, 1.75rem);
+  padding: clamp(1.5rem, 4vw, 2.75rem) clamp(2rem, 7vw, 4.5rem);
+
+  /* Glassmorphism */
+  background: rgba(6, 10, 16, 0.48);
+  backdrop-filter: blur(16px) saturate(1.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  isolation: isolate;
+  overflow: hidden;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.02),
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    0 0 40px var(--screen-glow, rgba(0, 229, 255, 0.25)),
+    0 0 140px var(--screen-glow, rgba(0, 229, 255, 0.18));
+
+  transition:
+    box-shadow 0.3s ease-out,
+    transform 0.3s ease-out,
+    background 0.3s ease-out;
+}
+
+/* ultra-subtle scanlines */
+.screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.02) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: overlay;
+  z-index: 1;
+}
+
+/* phase tints — set the glow color variable */
+.idle {
+  --screen-glow: rgba(120, 160, 200, 0.22);
+}
+.arming {
+  --screen-glow: rgba(255, 51, 85, 0.7);
+}
+.ready {
+  --screen-glow: rgba(34, 255, 102, 0.7);
+}
+.running {
+  --screen-glow: rgba(0, 229, 255, 0.75);
+  transform: scale(1.015);
+  background: rgba(6, 10, 16, 0.55);
+}
+.finished {
+  --screen-glow: rgba(255, 170, 51, 0.6);
+}
+
+/* keep children above scanline overlay */
+.screen > * {
+  position: relative;
+  z-index: 2;
+}

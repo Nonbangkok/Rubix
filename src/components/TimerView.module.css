@@ -1,0 +1,83 @@
+.stage {
+  position: fixed;
+  inset: 0;
+  color: white;
+  overflow: hidden;
+  user-select: none;
+}
+
+.camera {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.header {
+  position: fixed;
+  top: clamp(0.75rem, 2.5vh, 1.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 0.4rem 1.1rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  transition: opacity 0.4s ease;
+}
+
+.title {
+  font-family: var(--font-display), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.5em;
+  padding-left: 0.5em;
+  color: rgba(230, 240, 255, 0.55);
+  text-transform: uppercase;
+}
+
+.center {
+  position: relative;
+  z-index: 10;
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 3vh, 3rem);
+}
+
+.hint {
+  position: fixed;
+  bottom: clamp(3.75rem, 9vh, 5.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  max-width: 32rem;
+  margin: 0;
+  padding: 0 1rem;
+  text-align: center;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: rgba(230, 240, 255, 0.35);
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.statsBar {
+  position: fixed;
+  bottom: clamp(0.9rem, 2.5vh, 2rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  transition: opacity 0.4s ease;
+}
+
+/* Focus mode — fade chrome when the timer is RUNNING */
+.focus .header,
+.focus .statsBar {
+  opacity: 0.12;
+}
+
+.focus .hint {
+  opacity: 0;
+}

@@ -1,0 +1,50 @@
+.digits {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: var(--font-display), "Courier New", monospace;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--digit-color, #cceeff);
+  text-shadow:
+    0 0 4px var(--digit-glow, rgba(51, 136, 255, 0.9)),
+    0 0 12px var(--digit-glow, rgba(51, 136, 255, 0.75)),
+    0 0 28px var(--digit-glow, rgba(51, 136, 255, 0.5)),
+    0 0 64px var(--digit-glow, rgba(51, 136, 255, 0.3));
+  transition:
+    color 0.18s,
+    text-shadow 0.18s;
+  user-select: none;
+}
+
+.big {
+  font-size: clamp(4rem, 18vw, 11rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.small {
+  font-size: clamp(2rem, 9vw, 5.5rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.idle {
+  --digit-color: #7a8a99;
+  --digit-glow: rgba(60, 80, 100, 0.35);
+}
+.arming {
+  --digit-color: #ff9aa5;
+  --digit-glow: rgba(255, 51, 85, 0.65);
+}
+.ready {
+  --digit-color: #9affaa;
+  --digit-glow: rgba(34, 255, 102, 0.7);
+}
+.running {
+  --digit-color: #ffffff;
+  --digit-glow: rgba(0, 229, 255, 0.7);
+}
+.finished {
+  --digit-color: #fff2aa;
+  --digit-glow: rgba(255, 170, 51, 0.7);
+}
