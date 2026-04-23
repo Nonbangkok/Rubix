@@ -1,0 +1,45 @@
+.viewport {
+  /* Cube face size scales with viewport via vmin.
+     Parent aside clamps the container width; this var governs depth. */
+  --size: clamp(7rem, 18vmin, 12rem);
+  --half: calc(var(--size) / 2);
+  width: 100%;
+  aspect-ratio: 1;
+  perspective: calc(var(--size) * 4);
+  touch-action: none;
+  cursor: grab;
+  display: grid;
+  place-items: center;
+  user-select: none;
+}
+
+.viewport:active {
+  cursor: grabbing;
+}
+
+.scene {
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: max(1px, 0.2vmin);
+  padding: max(1px, 0.2vmin);
+  background: #0a0a0a;
+  border-radius: var(--rd-sm);
+  backface-visibility: hidden;
+  box-shadow: inset 0 0 0 max(1px, 0.1vmin) rgba(255, 255, 255, 0.04);
+}
+
+.tile {
+  border-radius: max(1px, 0.15vmin);
+  box-shadow: inset 0 0 0 max(1px, 0.1vmin) rgba(0, 0, 0, 0.25);
+}

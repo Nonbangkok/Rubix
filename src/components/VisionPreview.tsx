@@ -98,12 +98,6 @@ export function VisionPreview({ state, videoRef, className }: Props) {
         ref={canvasRef}
         className="absolute inset-0 w-full h-full object-cover -scale-x-100"
       />
-      <div
-        className="absolute top-4 right-4 text-[10px] font-mono uppercase tracking-[0.3em] text-white/65 bg-black/45 backdrop-blur px-3 py-1 rounded-full border border-white/10"
-        title={state.error ?? undefined}
-      >
-        {statusLabel}
-      </div>
     </div>
   );
 }

@@ -20,6 +20,7 @@ function formatHistoryTime(ms: number): string {
 
 export function History() {
   const solves = useTimerStore((s) => s.solves);
+  const deleteSolve = useTimerStore((s) => s.deleteSolve);
   
   // Show only last 8 solves
   const displaySolves = [...solves].reverse().slice(0, 8);
@@ -29,12 +30,24 @@ export function History() {
       {displaySolves.length === 0 ? (
         <div className={styles.empty}>no history</div>
       ) : (
-        displaySolves.map((ms, i) => (
-          <div key={solves.length - i} className={styles.item}>
-            <span className={styles.index}>#{solves.length - i}</span>
-            <span className={styles.value}>{formatHistoryTime(ms)}</span>
-          </div>
-        ))
+        displaySolves.map((ms, i) => {
+          const originalIndex = solves.length - 1 - i;
+          return (
+            <div key={originalIndex} className={styles.item}>
+              <div className={styles.left}>
+                <span className={styles.index}>#{originalIndex + 1}</span>
+                <span className={styles.value}>{formatHistoryTime(ms)}</span>
+              </div>
+              <button
+                className={styles.deleteBtn}
+                onClick={() => deleteSolve(originalIndex)}
+                aria-label="Delete solve"
+              >
+                ×
+              </button>
+            </div>
+          );
+        })
       )}
     </div>
   );

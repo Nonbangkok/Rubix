@@ -26,11 +26,6 @@ export function Stats() {
       <Stat label="Ao12" value={formatMs(ao12(solves))} />
       <span className={styles.sep} />
       <Stat label="solves" value={solves.length.toString()} />
-      {solves.length > 0 && (
-        <button onClick={clearHistory} className={styles.clear}>
-          clear
-        </button>
-      )}
     </div>
   );
 }

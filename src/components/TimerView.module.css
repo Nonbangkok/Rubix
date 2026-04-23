@@ -12,33 +12,85 @@
   z-index: 0;
 }
 
-.header {
+/* Unified glass sidebar (top-left) — houses header + stats + history.
+   All sizing is vmin-based so the sidebar shrinks and grows in sync
+   with TimerScreen and CubePanel. */
+.sidebar {
   position: fixed;
-  top: 1.5rem;
-  left: 1.5rem;
+  top: var(--sp-5);
+  left: var(--sp-5);
   z-index: 20;
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  transition: opacity 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(var(--blur-md)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(1.4);
+  border: var(--border-hair) solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--rd-md);
+  box-shadow: 0 var(--sp-1) var(--sp-4) rgba(0, 0, 0, 0.5);
+  transition: all 0.4s ease;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-1) var(--sp-2);
+  min-width: clamp(180px, 22vmin, 260px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
 }
 
 .title {
   font-family: var(--font-display), monospace;
-  font-size: 0.6rem;
+  font-size: var(--fs-2xs);
   letter-spacing: 0.5em;
   padding-left: 0.5em;
   color: rgba(230, 240, 255, 0.55);
   text-transform: uppercase;
 }
 
+.status {
+  font-family: var(--font-display), monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: var(--rd-pill);
+  border: var(--border-hair) solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.clearBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border: var(--border-hair) solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  font-family: var(--font-display), monospace;
+  font-size: var(--fs-2xs);
+  padding: 2px var(--sp-2);
+  border-radius: var(--rd-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.1em;
+}
+
+.clearBtn:hover {
+  background: rgba(255, 50, 80, 0.15);
+  border-color: rgba(255, 50, 80, 0.3);
+  color: rgba(255, 100, 120, 0.8);
+}
+
 .center {
   position: fixed;
-  top: 1.5rem;
+  top: var(--sp-5);
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -50,30 +102,73 @@
 }
 
 .statsBar {
-  position: fixed;
-  top: 4.5rem;
-  left: 1.5rem;
-  z-index: 20;
-  transition: opacity 0.4s ease;
+  width: 100%;
 }
 
 .historyBox {
+  width: 100%;
+}
+
+.cubeBox {
   position: fixed;
-  top: 8.5rem;
-  left: 1.5rem;
+  top: var(--sp-5);
+  right: var(--sp-5);
   z-index: 20;
-  transition: opacity 0.4s ease;
+  transition: all 0.4s ease;
 }
 
-/* Focus mode — fade chrome when the timer is RUNNING */
+/* ----------------------------------------------------------------------
+   Focus mode — timer slides DOWN to 20% so the user's face stays
+   visible in the webcam feed. Digits are already fluid via
+   var(--fs-timer-lg); the 1.2x bump is deliberate emphasis.
+   ---------------------------------------------------------------------- */
 .focus .center {
-  top: 45%;
-  transform: translate(-50%, -50%) scale(1.6);
+  top: 20%;
+  transform: translate(-50%, -50%) scale(1.2);
 }
 
-.focus .header,
-.focus .statsBar,
-.focus .historyBox {
+.focus .sidebar,
+.focus .cubeBox {
   opacity: 0;
   pointer-events: none;
+  transform: translateY(calc(var(--sp-2) * -1));
+}
+
+/* ----------------------------------------------------------------------
+   Responsive: fluid tokens handle most sizing. These media queries are
+   reserved for *layout-level* decisions (hide, reflow) that can't be
+   expressed as a single clamp. Pad zones live at y[70%-100%] in
+   x[5%-40%] (left) and x[60%-95%] (right) — all floating UI stays above
+   and out of those bands.
+   ---------------------------------------------------------------------- */
+
+/* Mobile landscape — short vertical axis; drop history to keep UI
+   above the pad zones. */
+@media (max-width: 900px) and (orientation: landscape) {
+  .historyBox {
+    display: none;
+  }
+  .focus .center {
+    top: 72%;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* Narrow portrait — PortraitPrompt usually covers, but degrade
+   gracefully: center the sidebar, drop history + cube. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .sidebar {
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: 90vw;
+  }
+  .historyBox,
+  .cubeBox {
+    display: none;
+  }
+  .focus .center {
+    top: 68%;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
 }

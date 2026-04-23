@@ -1,19 +1,19 @@
 .row {
   display: inline-flex;
-  gap: clamp(1.25rem, 4vw, 2.5rem);
+  gap: var(--sp-7);
   align-items: center;
-  padding: 0.25rem 0;
+  padding: var(--sp-1) 0;
 }
 
 .light {
-  width: clamp(0.85rem, 2.4vw, 1.35rem);
+  width: var(--led-md);
   aspect-ratio: 1;
-  border-radius: 9999px;
+  border-radius: var(--rd-pill);
   background: #121416;
   box-shadow:
-    inset 0 0 4px rgba(0, 0, 0, 0.9),
-    inset 0 0 1px rgba(255, 255, 255, 0.06),
-    0 0 0 1.5px rgba(255, 255, 255, 0.05);
+    inset 0 0 0.4vmin rgba(0, 0, 0, 0.9),
+    inset 0 0 0.1vmin rgba(255, 255, 255, 0.06),
+    0 0 0 max(1px, 0.15vmin) rgba(255, 255, 255, 0.05);
   transition:
     background 0.12s ease-out,
     box-shadow 0.12s ease-out;
@@ -23,48 +23,48 @@
 .neutral {
   background: #4a4a4a;
   box-shadow:
-    inset 0 0 4px rgba(0, 0, 0, 0.8),
-    0 0 6px rgba(180, 180, 180, 0.25),
-    0 0 0 1.5px rgba(255, 255, 255, 0.08);
+    inset 0 0 0.4vmin rgba(0, 0, 0, 0.8),
+    0 0 0.6vmin rgba(180, 180, 180, 0.25),
+    0 0 0 max(1px, 0.15vmin) rgba(255, 255, 255, 0.08);
 }
 
 .red {
   background: #ff3355;
   box-shadow:
-    inset 0 0 6px rgba(120, 0, 10, 0.85),
-    0 0 14px rgba(255, 51, 85, 0.95),
-    0 0 36px rgba(255, 51, 85, 0.65),
-    0 0 0 1.5px rgba(255, 80, 100, 0.5);
+    inset 0 0 0.6vmin rgba(120, 0, 10, 0.85),
+    0 0 1.4vmin rgba(255, 51, 85, 0.95),
+    0 0 3.6vmin rgba(255, 51, 85, 0.65),
+    0 0 0 max(1px, 0.15vmin) rgba(255, 80, 100, 0.5);
 }
 
 .green {
   background: #22ff66;
   box-shadow:
-    inset 0 0 6px rgba(0, 70, 20, 0.85),
-    0 0 14px rgba(34, 255, 102, 0.95),
-    0 0 36px rgba(34, 255, 102, 0.65),
-    0 0 0 1.5px rgba(80, 255, 130, 0.5);
+    inset 0 0 0.6vmin rgba(0, 70, 20, 0.85),
+    0 0 1.4vmin rgba(34, 255, 102, 0.95),
+    0 0 3.6vmin rgba(34, 255, 102, 0.65),
+    0 0 0 max(1px, 0.15vmin) rgba(80, 255, 130, 0.5);
 }
 
 .white {
   background: #eafcff;
   box-shadow:
-    inset 0 0 6px rgba(120, 180, 200, 0.6),
-    0 0 12px rgba(0, 229, 255, 0.9),
-    0 0 32px rgba(0, 229, 255, 0.5);
+    inset 0 0 0.6vmin rgba(120, 180, 200, 0.6),
+    0 0 1.2vmin rgba(0, 229, 255, 0.9),
+    0 0 3.2vmin rgba(0, 229, 255, 0.5);
 }
 
 .yellow {
   background: #ffd24a;
   box-shadow:
-    inset 0 0 6px rgba(120, 80, 0, 0.8),
-    0 0 12px rgba(255, 210, 74, 0.8),
-    0 0 32px rgba(255, 170, 51, 0.5);
+    inset 0 0 0.6vmin rgba(120, 80, 0, 0.8),
+    0 0 1.2vmin rgba(255, 210, 74, 0.8),
+    0 0 3.2vmin rgba(255, 170, 51, 0.5);
 }
 
 .label {
   font-family: var(--font-display), monospace;
-  font-size: 0.65rem;
+  font-size: var(--fs-xs);
   letter-spacing: 0.3em;
   color: rgba(255, 255, 255, 0.25);
   user-select: none;

@@ -3,6 +3,51 @@
 :root {
   --background: #000000;
   --foreground: #ededed;
+
+  /* --------------------------------------------------------------
+     Fluid design tokens — everything scales linearly with viewport
+     via `vmin` (smaller of vw/vh). `clamp()` sets a readable floor
+     and a breathing ceiling so the UI neither vanishes on tiny
+     screens nor dominates ultra-wide monitors.
+
+     Reference: 1vmin ≈ 7.2px at 720p, 10.8px at 1080p, 14.4px at
+     1440p. A single viewport-unit change propagates through every
+     panel, font, radius, and glow.
+     -------------------------------------------------------------- */
+
+  /* Font sizes */
+  --fs-2xs:       clamp(0.5rem,  1.05vmin, 1rem);     /* tiny labels */
+  --fs-xs:        clamp(0.6rem,  1.35vmin, 1.2rem);   /* indices, values */
+  --fs-sm:        clamp(0.72rem, 1.65vmin, 1.45rem);  /* stat values */
+  --fs-md:        clamp(0.88rem, 2vmin,    1.75rem);  /* sub-headers */
+  --fs-lg:        clamp(1.05rem, 2.6vmin,  2.2rem);   /* titles */
+  --fs-timer-lg:  clamp(2.75rem, 11vmin,   8rem);     /* timer SS */
+  --fs-timer-sm:  clamp(1.4rem,  5.5vmin,  4rem);     /* timer ms */
+
+  /* Spacing (padding / margin / gap) */
+  --sp-1: clamp(0.15rem, 0.35vmin, 0.35rem);
+  --sp-2: clamp(0.28rem, 0.6vmin,  0.6rem);
+  --sp-3: clamp(0.4rem,  0.9vmin,  0.85rem);
+  --sp-4: clamp(0.6rem,  1.3vmin,  1.15rem);
+  --sp-5: clamp(0.85rem, 1.8vmin,  1.55rem);
+  --sp-6: clamp(1.1rem,  2.3vmin,  2.05rem);
+  --sp-7: clamp(1.4rem,  3vmin,    2.7rem);
+
+  /* Radii */
+  --rd-sm:   clamp(0.3rem,  0.8vmin, 0.6rem);
+  --rd-md:   clamp(0.5rem,  1.2vmin, 0.95rem);
+  --rd-lg:   clamp(0.75rem, 1.8vmin, 1.4rem);
+  --rd-pill: 9999px;
+
+  /* Glass / effect dimensions (keep blur perceivable at small sizes) */
+  --blur-soft:   clamp(6px,  1.2vmin, 12px);
+  --blur-md:     clamp(8px,  1.6vmin, 16px);
+  --blur-lg:     clamp(10px, 2vmin,   20px);
+  --border-hair: max(1px, 0.12vmin);
+
+  /* LED / indicator sizes */
+  --led-sm: clamp(0.65rem, 1.8vmin, 1.5rem);
+  --led-md: clamp(0.85rem, 2.4vmin, 1.85rem);
 }
 
 @theme inline {

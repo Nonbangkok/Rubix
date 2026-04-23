@@ -14,7 +14,7 @@ export function pointInZone(p: NormalizedPoint, zone: ZoneRect): boolean {
 
 // Pro-logic: Check density of landmarks in the zone and depth (Z).
 // Much more stable than checking specific indices.
-const DENSITY_THRESHOLD = 6; // At least 6 of 21 points must be in zone
+const DENSITY_THRESHOLD = 12; // At least 12 of 21 points must be in zone
 const MAX_DEPTH = 0.15;      // Ignore hands too far from camera
 
 export function isHandOnPad(hand: HandLandmarks, zone: ZoneRect): boolean {

@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { generateScramble } from "@/lib/cube/scramble";
 
 export type TimerPhase =
   | "IDLE"
@@ -17,11 +18,14 @@ type State = {
   runStartedAt: number | null;
   runFinishedAt: number | null;
   solves: number[];
+  scramble: string[];
 };
 
 type Actions = {
   handlePad: (left: boolean, right: boolean, now: number) => void;
   clearHistory: () => void;
+  deleteSolve: (index: number) => void;
+  regenerateScramble: () => void;
 };
 
 const INITIAL: State = {
@@ -30,6 +34,7 @@ const INITIAL: State = {
   runStartedAt: null,
   runFinishedAt: null,
   solves: [],
+  scramble: generateScramble(),
 };
 
 let armTimer: ReturnType<typeof setTimeout> | null = null;
@@ -87,11 +92,14 @@ export const useTimerStore = create<State & Actions>()((set, get) => ({
 
       case "FINISHED":
         if (bothOff) {
+          // Transitioning out of a completed solve — generate a fresh
+          // scramble for the next one.
           set({
             phase: "IDLE",
             armStartedAt: null,
             runStartedAt: null,
             runFinishedAt: null,
+            scramble: generateScramble(),
           });
         }
         break;
@@ -100,6 +108,14 @@ export const useTimerStore = create<State & Actions>()((set, get) => ({
 
   clearHistory: () => {
     clearArmTimer();
-    set({ ...INITIAL });
+    set({ ...INITIAL, scramble: generateScramble() });
   },
+
+  deleteSolve: (index) => {
+    set((s) => ({
+      solves: s.solves.filter((_, i) => i !== index),
+    }));
+  },
+
+  regenerateScramble: () => set({ scramble: generateScramble() }),
 }));
