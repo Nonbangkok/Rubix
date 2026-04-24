@@ -1,6 +1,7 @@
 "use client";
 
 import { useTimerStore } from "@/lib/timer/store";
+import { soundManager } from "@/lib/audio/sounds";
 import styles from "./History.module.css";
 
 function formatHistoryTime(ms: number): string {
@@ -20,10 +21,15 @@ function formatHistoryTime(ms: number): string {
 
 export function History() {
   const solves = useTimerStore((s) => s.solves);
-  const deleteSolve = useTimerStore((s) => s.deleteSolve);
+  const deleteSolveAction = useTimerStore((s) => s.deleteSolve);
   
   // Show only last 8 solves
   const displaySolves = [...solves].reverse().slice(0, 8);
+
+  const deleteSolve = (index: number) => {
+    deleteSolveAction(index);
+    soundManager.play("ui");
+  };
 
   return (
     <div className={styles.container}>

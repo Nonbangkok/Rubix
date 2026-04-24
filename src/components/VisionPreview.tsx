@@ -63,8 +63,8 @@ export function VisionPreview({ state, videoRef, className }: Props) {
       }
       ctx.restore();
     };
-    drawCyberZone(LEFT_ZONE, state.smoothedZones.left);
-    drawCyberZone(RIGHT_ZONE, state.smoothedZones.right);
+    drawCyberZone(LEFT_ZONE, state.smoothedZones.right);
+    drawCyberZone(RIGHT_ZONE, state.smoothedZones.left);
 
     ctx.save();
     ctx.fillStyle = "rgba(0, 229, 255, 0.9)";

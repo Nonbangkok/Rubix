@@ -1,22 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { VisionState } from "@/lib/vision/useHandVision";
 import { useTimerStore } from "./store";
-
-const READY_SOUND = "/sounds/ready.mp3";
-const STOP_SOUND = "/sounds/stop.mp3";
-
-function playSilent(src: string): void {
-  try {
-    const a = new Audio(src);
-    a.volume = 0.7;
-    // Suppress unhandled-rejection noise if file is missing or autoplay blocked.
-    void a.play().catch(() => undefined);
-  } catch {
-    // noop
-  }
-}
 
 // Wires vision + keyboard inputs into the timer store, and fires sound cues
 // on state transitions.
@@ -58,12 +44,5 @@ export function useTimerDriver(vision: VisionState): void {
   }, [handlePad]);
 
   // Sound cues on phase transitions
-  const prevPhase = useRef(phase);
-  useEffect(() => {
-    const from = prevPhase.current;
-    prevPhase.current = phase;
-    if (from === phase) return;
-    if (phase === "READY") playSilent(READY_SOUND);
-    if (phase === "FINISHED" && from === "RUNNING") playSilent(STOP_SOUND);
-  }, [phase]);
+  // (Removed ready/stop sounds as requested)
 }

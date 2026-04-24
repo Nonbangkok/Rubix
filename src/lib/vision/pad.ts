@@ -36,8 +36,8 @@ export function rawZoneState(hands: HandLandmarks[]): PadZoneState {
   let left = false;
   let right = false;
   for (const hand of hands) {
-    if (!left && isHandOnPad(hand, LEFT_ZONE)) left = true;
-    if (!right && isHandOnPad(hand, RIGHT_ZONE)) right = true;
+    if (!right && isHandOnPad(hand, LEFT_ZONE)) right = true;
+    if (!left && isHandOnPad(hand, RIGHT_ZONE)) left = true;
     if (left && right) break;
   }
   return { left, right };

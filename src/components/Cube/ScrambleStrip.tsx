@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useTimerStore } from "@/lib/timer/store";
+import { soundManager } from "@/lib/audio/sounds";
 import styles from "./ScrambleStrip.module.css";
 
 export function ScrambleStrip() {
   const [mounted, setMounted] = useState(false);
   const scramble = useTimerStore((s) => s.scramble);
-  const regenerate = useTimerStore((s) => s.regenerateScramble);
+  const regenerateAction = useTimerStore((s) => s.regenerateScramble);
+
+  const regenerate = () => {
+    regenerateAction();
+    soundManager.play("ui");
+  };
 
   useEffect(() => {
     setMounted(true);

@@ -12,6 +12,7 @@ import { Stats } from "./Timer/Stats";
 import { History } from "./Timer/History";
 import { ScrambleStrip } from "./Cube/ScrambleStrip";
 import { CubePanel } from "./Cube/CubePanel";
+import { soundManager } from "@/lib/audio/sounds";
 import styles from "./TimerView.module.css";
 
 export function TimerView() {
@@ -50,7 +51,13 @@ export function TimerView() {
             </div>
           </div>
           {solves.length > 0 && (
-            <button onClick={clearHistory} className={styles.clearBtn}>
+            <button
+              onClick={() => {
+                clearHistory();
+                soundManager.play("ui");
+              }}
+              className={styles.clearBtn}
+            >
               CLEAR
             </button>
           )}
