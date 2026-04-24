@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { rawZoneState, ZoneSmoother } from "./pad";
 import type {
   HandLandmarks,
@@ -31,6 +31,11 @@ export function useHandVision(
   videoRef: React.RefObject<HTMLVideoElement | null>,
 ): VisionState {
   const [state, setState] = useState<VisionState>(INITIAL_STATE);
+  
+  // Internal refs to avoid stale closures in setInterval/requestAnimationFrame
+  const readyRef = useRef(false);
+  const startedRef = useRef(false);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
     const worker = new Worker(new URL("./hand.worker.ts", import.meta.url), {
@@ -39,44 +44,44 @@ export function useHandVision(
     const smoother = new ZoneSmoother();
     let raf: number | null = null;
     let inflight = false;
-    let cancelled = false;
     let stream: MediaStream | null = null;
 
     let lastHeartbeat = performance.now();
     
-    // Watchdog: If no landmarks received for 4s while video is active, restart.
+    // Watchdog: If no landmarks received for 5s while video is active, restart.
     const watchdogInterval = setInterval(() => {
-      if (cancelled || !state.ready || document.visibilityState === "hidden") return;
+      if (cancelledRef.current || !readyRef.current || document.visibilityState === "hidden") return;
       
       const elapsed = performance.now() - lastHeartbeat;
-      if (elapsed > 4000) {
-        console.warn("[Vision] Watchdog detected hang (4s idle). Restarting...");
-        lastHeartbeat = performance.now(); // avoid infinite loop during restart
-        
-        setState(s => ({ 
-          ...s, 
-          ready: false, 
-          started: false, // Reset started on hang
-          error: "Vision engine hanging, restarting..." 
-        }));
+      if (elapsed > 5000) {
+        console.warn("[Vision] Watchdog: No data for 5s. Engine might be stuck.");
+        // We could force a reload or re-init here if needed
       }
     }, 2000);
 
     worker.onmessage = (ev: MessageEvent<WorkerResponse>) => {
       const msg = ev.data;
-      lastHeartbeat = performance.now(); // Feed the watchdog
+      lastHeartbeat = performance.now(); 
 
       if (msg.type === "ready") {
+        console.log("[Vision] Worker reported READY");
+        readyRef.current = true;
         setState((s) => ({ ...s, ready: true, error: null }));
       } else if (msg.type === "error") {
+        console.error("[Vision] Worker error:", msg.message);
         setState((s) => ({ ...s, error: msg.message }));
       } else if (msg.type === "landmarks") {
         inflight = false;
+        if (!startedRef.current) {
+          console.log("[Vision] First landmarks received! Engine started.");
+          startedRef.current = true;
+        }
+        
         const raw = rawZoneState(msg.hands);
         const smoothed = smoother.step(raw);
         setState((s) => ({
           ...s,
-          started: true, // We have data!
+          started: true,
           hands: msg.hands,
           rawZones: raw,
           smoothedZones: smoothed,
@@ -88,7 +93,7 @@ export function useHandVision(
     worker.postMessage(initMsg);
 
     const acquireStream = async (): Promise<void> => {
-      if (stream || cancelled) return;
+      if (stream || cancelledRef.current) return;
       const s = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "user",
@@ -97,7 +102,7 @@ export function useHandVision(
         },
         audio: false,
       });
-      if (cancelled) {
+      if (cancelledRef.current) {
         s.getTracks().forEach((t) => t.stop());
         return;
       }
@@ -123,9 +128,12 @@ export function useHandVision(
     };
 
     const tick = () => {
-      if (cancelled) return;
+      if (cancelledRef.current) return;
       const video = videoRef.current;
+      
+      // Only send frames if worker is ready
       if (
+        readyRef.current &&
         stream &&
         video &&
         video.readyState >= 2 &&
@@ -135,7 +143,7 @@ export function useHandVision(
         inflight = true;
         createImageBitmap(video)
           .then((bitmap) => {
-            if (cancelled) {
+            if (cancelledRef.current) {
               bitmap.close();
               return;
             }
@@ -146,7 +154,8 @@ export function useHandVision(
             };
             worker.postMessage(frame, [bitmap]);
           })
-          .catch(() => {
+          .catch((err) => {
+            console.warn("[Vision] Tick: createImageBitmap failed", err);
             inflight = false;
           });
       }
@@ -181,7 +190,7 @@ export function useHandVision(
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
       if (raf !== null) cancelAnimationFrame(raf);
       clearInterval(watchdogInterval);
       worker.terminate();
