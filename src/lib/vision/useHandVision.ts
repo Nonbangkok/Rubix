@@ -11,6 +11,7 @@ import type {
 
 export type VisionState = {
   ready: boolean;
+  started: boolean; // True only when the first frame has been processed
   error: string | null;
   hands: HandLandmarks[];
   rawZones: PadZoneState;
@@ -19,6 +20,7 @@ export type VisionState = {
 
 const INITIAL_STATE: VisionState = {
   ready: false,
+  started: false,
   error: null,
   hands: [],
   rawZones: { left: false, right: false },
@@ -40,10 +42,32 @@ export function useHandVision(
     let cancelled = false;
     let stream: MediaStream | null = null;
 
+    let lastHeartbeat = performance.now();
+    
+    // Watchdog: If no landmarks received for 4s while video is active, restart.
+    const watchdogInterval = setInterval(() => {
+      if (cancelled || !state.ready || document.visibilityState === "hidden") return;
+      
+      const elapsed = performance.now() - lastHeartbeat;
+      if (elapsed > 4000) {
+        console.warn("[Vision] Watchdog detected hang (4s idle). Restarting...");
+        lastHeartbeat = performance.now(); // avoid infinite loop during restart
+        
+        setState(s => ({ 
+          ...s, 
+          ready: false, 
+          started: false, // Reset started on hang
+          error: "Vision engine hanging, restarting..." 
+        }));
+      }
+    }, 2000);
+
     worker.onmessage = (ev: MessageEvent<WorkerResponse>) => {
       const msg = ev.data;
+      lastHeartbeat = performance.now(); // Feed the watchdog
+
       if (msg.type === "ready") {
-        setState((s) => ({ ...s, ready: true }));
+        setState((s) => ({ ...s, ready: true, error: null }));
       } else if (msg.type === "error") {
         setState((s) => ({ ...s, error: msg.message }));
       } else if (msg.type === "landmarks") {
@@ -52,6 +76,7 @@ export function useHandVision(
         const smoothed = smoother.step(raw);
         setState((s) => ({
           ...s,
+          started: true, // We have data!
           hands: msg.hands,
           rawZones: raw,
           smoothedZones: smoothed,
@@ -158,6 +183,7 @@ export function useHandVision(
     return () => {
       cancelled = true;
       if (raf !== null) cancelAnimationFrame(raf);
+      clearInterval(watchdogInterval);
       worker.terminate();
       releaseStream();
       document.removeEventListener("visibilitychange", onVisibility);

@@ -47,7 +47,9 @@ export function TimerView() {
                 ? "error"
                 : !vision.ready
                   ? "loading vision"
-                  : "● LIVE"}
+                  : !vision.started
+                    ? "starting engine..."
+                    : "● LIVE"}
             </div>
           </div>
           {solves.length > 0 && (

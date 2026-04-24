@@ -19,14 +19,30 @@ function post(msg: WorkerResponse): void {
 
 async function init(): Promise<void> {
   const fileset = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_BASE);
-  landmarker = await HandLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
-    runningMode: "VIDEO",
-    numHands: 2,
-    minHandDetectionConfidence: 0.4,
-    minHandPresenceConfidence: 0.4,
-    minTrackingConfidence: 0.4,
-  });
+  
+  try {
+    console.log("[VisionWorker] Attempting to init with GPU...");
+    landmarker = await HandLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
+      runningMode: "VIDEO",
+      numHands: 2,
+      minHandDetectionConfidence: 0.4,
+      minHandPresenceConfidence: 0.4,
+      minTrackingConfidence: 0.4,
+    });
+    console.log("[VisionWorker] Landmarker ready (GPU)");
+  } catch (err) {
+    console.warn("[VisionWorker] GPU initialization failed, falling back to CPU:", err);
+    landmarker = await HandLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: MODEL_URL, delegate: "CPU" },
+      runningMode: "VIDEO",
+      numHands: 2,
+      minHandDetectionConfidence: 0.4,
+      minHandPresenceConfidence: 0.4,
+      minTrackingConfidence: 0.4,
+    });
+    console.log("[VisionWorker] Landmarker ready (CPU)");
+  }
 }
 
 scope.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
