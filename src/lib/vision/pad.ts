@@ -1,7 +1,5 @@
 import {
-  LEFT_ZONE,
   PAD_LANDMARK_INDICES,
-  RIGHT_ZONE,
   type HandLandmarks,
   type NormalizedPoint,
   type PadZoneState,
@@ -32,12 +30,17 @@ export function isHandOnPad(hand: HandLandmarks, zone: ZoneRect): boolean {
   return pointsInZone >= DENSITY_THRESHOLD;
 }
 
-export function rawZoneState(hands: HandLandmarks[]): PadZoneState {
+export function rawZoneState(
+  hands: HandLandmarks[],
+  leftZone: ZoneRect,
+  rightZone: ZoneRect,
+): PadZoneState {
   let left = false;
   let right = false;
   for (const hand of hands) {
-    if (!right && isHandOnPad(hand, LEFT_ZONE)) right = true;
-    if (!left && isHandOnPad(hand, RIGHT_ZONE)) left = true;
+    // The preview is mirrored, so a physical left pad drives logical right.
+    if (!right && isHandOnPad(hand, leftZone)) right = true;
+    if (!left && isHandOnPad(hand, rightZone)) left = true;
     if (left && right) break;
   }
   return { left, right };

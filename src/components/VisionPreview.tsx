@@ -2,17 +2,23 @@
 
 import { type RefObject, useEffect, useRef } from "react";
 import { zoneToPixels } from "@/lib/vision/pad";
-import { LEFT_ZONE, RIGHT_ZONE, type ZoneRect } from "@/lib/vision/types";
-import type { VisionState } from "@/lib/vision/useHandVision";
+import type { ZoneRect } from "@/lib/vision/types";
+import {
+  normalizeVisionZones,
+  type VisionState,
+  type VisionZones,
+} from "@/lib/vision/useHandVision";
 
 type Props = {
   state: VisionState;
   videoRef: RefObject<HTMLVideoElement | null>;
+  zones: VisionZones;
   className?: string;
 };
 
-export function VisionPreview({ state, videoRef, className }: Props) {
+export function VisionPreview({ state, videoRef, zones, className }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { leftZone, rightZone } = normalizeVisionZones(zones);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -63,8 +69,8 @@ export function VisionPreview({ state, videoRef, className }: Props) {
       }
       ctx.restore();
     };
-    drawCyberZone(LEFT_ZONE, state.smoothedZones.right);
-    drawCyberZone(RIGHT_ZONE, state.smoothedZones.left);
+    drawCyberZone(leftZone, state.smoothedZones.right);
+    drawCyberZone(rightZone, state.smoothedZones.left);
 
     ctx.save();
     ctx.fillStyle = "rgba(0, 229, 255, 0.9)";
@@ -78,7 +84,7 @@ export function VisionPreview({ state, videoRef, className }: Props) {
       }
     }
     ctx.restore();
-  }, [state, videoRef]);
+  }, [leftZone, rightZone, state, videoRef]);
 
   const statusLabel = state.error
     ? `camera error`

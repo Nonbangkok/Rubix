@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { zoneRectFromLayout } from "@/lib/layout/geometry";
+import type { LayoutRect } from "@/lib/layout/types";
 import { rawZoneState, ZoneSmoother } from "./pad";
 import type {
   HandLandmarks,
   PadZoneState,
+  ZoneRect,
   WorkerRequest,
   WorkerResponse,
 } from "./types";
@@ -27,8 +30,36 @@ const INITIAL_STATE: VisionState = {
   smoothedZones: { left: false, right: false },
 };
 
+export type VisionZoneInput = LayoutRect | ZoneRect;
+
+export type VisionZones = {
+  leftZone: VisionZoneInput;
+  rightZone: VisionZoneInput;
+};
+
+export type NormalizedVisionZones = {
+  leftZone: ZoneRect;
+  rightZone: ZoneRect;
+};
+
+function isLayoutRect(zone: VisionZoneInput): zone is LayoutRect {
+  return "width" in zone && "height" in zone;
+}
+
+function toZoneRect(zone: VisionZoneInput): ZoneRect {
+  return isLayoutRect(zone) ? zoneRectFromLayout(zone) : zone;
+}
+
+export function normalizeVisionZones(zones: VisionZones): NormalizedVisionZones {
+  return {
+    leftZone: toZoneRect(zones.leftZone),
+    rightZone: toZoneRect(zones.rightZone),
+  };
+}
+
 export function useHandVision(
   videoRef: React.RefObject<HTMLVideoElement | null>,
+  zones: VisionZones,
 ): VisionState {
   const [state, setState] = useState<VisionState>(INITIAL_STATE);
   
@@ -36,6 +67,10 @@ export function useHandVision(
   const readyRef = useRef(false);
   const startedRef = useRef(false);
   const cancelledRef = useRef(false);
+  const zonesRef = useRef<NormalizedVisionZones>(normalizeVisionZones(zones));
+
+  // Keep worker callbacks aligned with a dragged layout without recreating media.
+  zonesRef.current = normalizeVisionZones(zones);
 
   useEffect(() => {
     const worker = new Worker(new URL("./hand.worker.ts", import.meta.url), {
@@ -77,7 +112,11 @@ export function useHandVision(
           startedRef.current = true;
         }
         
-        const raw = rawZoneState(msg.hands);
+        const raw = rawZoneState(
+          msg.hands,
+          zonesRef.current.leftZone,
+          zonesRef.current.rightZone,
+        );
         const smoothed = smoother.step(raw);
         setState((s) => ({
           ...s,

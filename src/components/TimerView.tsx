@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { DEFAULT_HUD_LAYOUT } from "@/lib/layout/defaults";
 import { useHandVision } from "@/lib/vision/useHandVision";
 import { useTimerDriver } from "@/lib/timer/useTimerDriver";
 import { useTimerStore } from "@/lib/timer/store";
@@ -15,9 +16,14 @@ import { CubePanel } from "./Cube/CubePanel";
 import { soundManager } from "@/lib/audio/sounds";
 import styles from "./TimerView.module.css";
 
+const DEFAULT_VISION_ZONES = {
+  leftZone: DEFAULT_HUD_LAYOUT.leftZone,
+  rightZone: DEFAULT_HUD_LAYOUT.rightZone,
+};
+
 export function TimerView() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const vision = useHandVision(videoRef);
+  const vision = useHandVision(videoRef, DEFAULT_VISION_ZONES);
   useTimerDriver(vision);
   const phase = useTimerStore((s) => s.phase);
   const solves = useTimerStore((s) => s.solves);
@@ -32,6 +38,7 @@ export function TimerView() {
       <VisionPreview
         state={vision}
         videoRef={videoRef}
+        zones={DEFAULT_VISION_ZONES}
         className={styles.camera}
       />
 
