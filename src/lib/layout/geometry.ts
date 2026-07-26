@@ -150,10 +150,10 @@ export function snapRect(rect: LayoutRect, viewport: ViewportSize): LayoutRect {
 
 export function zoneRectFromLayout(rect: LayoutRect): ZoneRect {
   return {
-    x0: rounded(rect.x),
-    y0: rounded(rect.y),
-    x1: rounded(rect.x + rect.width),
-    y1: rounded(rect.y + rect.height),
+    x0: rect.x,
+    y0: rect.y,
+    x1: rect.x + rect.width,
+    y1: rect.y + rect.height,
   };
 }
 

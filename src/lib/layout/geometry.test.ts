@@ -81,11 +81,12 @@ describe("layout helpers", () => {
   });
 
   it("converts a layout rectangle to a zone rectangle", () => {
-    expect(zoneRectFromLayout({ x: 0.1, y: 0.2, width: 0.3, height: 0.4 })).toEqual({
-      x0: 0.1,
-      y0: 0.2,
-      x1: 0.4,
-      y1: 0.6,
+    const rect = { x: 0.1, y: 0.2, width: 0.3, height: 0.4 };
+    expect(zoneRectFromLayout(rect)).toEqual({
+      x0: rect.x,
+      y0: rect.y,
+      x1: rect.x + rect.width,
+      y1: rect.y + rect.height,
     });
   });
 });

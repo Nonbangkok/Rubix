@@ -46,6 +46,22 @@ describe("HUD layout storage", () => {
     expect(loadHudLayout()).toEqual(DEFAULT_HUD_LAYOUT);
   });
 
+  it("returns defaults when localStorage is unavailable", () => {
+    vi.stubGlobal("localStorage", undefined);
+
+    expect(loadHudLayout()).toEqual(DEFAULT_HUD_LAYOUT);
+  });
+
+  it("returns defaults when reading localStorage throws", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("storage disabled");
+      },
+    });
+
+    expect(loadHudLayout()).toEqual(DEFAULT_HUD_LAYOUT);
+  });
+
   it("round-trips the entire layout", () => {
     const layout = {
       ...DEFAULT_HUD_LAYOUT,
