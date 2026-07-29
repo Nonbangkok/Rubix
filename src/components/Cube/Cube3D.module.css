@@ -3,8 +3,15 @@
      Parent aside clamps the container width; this var governs depth. */
   --size: clamp(7rem, 18vmin, 12rem);
   --half: calc(var(--size) / 2);
+  /* Fills CubePanel's .body box exactly (same as CubeNet's SVG), rather
+     than deriving its own height from width via aspect-ratio: 1 — that
+     made this viewport's LAID-OUT height track the panel's width, which
+     usually differs from .body's fixed height, making the whole cube
+     panel visibly change size when switching between the NET and 3D
+     tabs. The cube itself (.scene) has its own fixed --size and is just
+     centered here, so this doesn't change its visual proportions. */
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
   perspective: calc(var(--size) * 4);
   touch-action: none;
   cursor: grab;

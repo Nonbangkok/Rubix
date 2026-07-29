@@ -2,7 +2,10 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-3);
-  max-width: min(72ch, 90vmin);
+  /* Fixed width (not max-width): a short scramble must not shrink the
+     strip, since that would shrink the timer panel's whole natural size
+     along with it. Long scrambles still truncate via .moves' ellipsis. */
+  width: min(72ch, 90vmin);
   padding: var(--sp-2) var(--sp-4);
   border-radius: var(--rd-pill);
   background: rgba(0, 0, 0, 0.35);

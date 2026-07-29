@@ -48,14 +48,18 @@
 }
 
 .body {
-  min-height: clamp(5rem, 14vmin, 10rem);
+  /* Fixed height (not min-height), shared by both tabs, so switching
+     between NET and 3D never changes the panel's own footprint — only
+     what's rendered inside this fixed box changes. */
+  height: clamp(5rem, 14vmin, 10rem);
   display: grid;
   place-items: center;
   transition: all 0.3s ease;
 }
 
 .body3d {
-  min-height: clamp(4rem, 11vmin, 8rem);
+  /* Purely a visual shrink of the 3D cube within the same fixed .body
+     box above — does not affect layout size (transform never does). */
   transform: scale(0.65);
 }
 
