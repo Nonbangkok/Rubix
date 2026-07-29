@@ -16,9 +16,6 @@
    All sizing is vmin-based so the sidebar shrinks and grows in sync
    with TimerScreen and CubePanel. */
 .sidebar {
-  position: fixed;
-  top: var(--sp-5);
-  left: var(--sp-5);
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -88,11 +85,14 @@
   color: rgba(255, 100, 120, 0.8);
 }
 
+/* Positioning (position/left/top/transform) is intentionally absent here:
+   outside focus mode TimerView applies the editor's inline
+   position/left/top/width/height directly to this element, and during
+   focus mode `.focus .center` below supplies its own complete
+   position/left/top/transform instead (TimerView skips the inline style
+   entirely while focused, so there is no inline `transform` around to
+   conflict with the class rule's translate/scale). */
 .center {
-  position: fixed;
-  top: var(--sp-5);
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -110,9 +110,6 @@
 }
 
 .cubeBox {
-  position: fixed;
-  top: var(--sp-5);
-  right: var(--sp-5);
   z-index: 20;
   transition: all 0.4s ease;
 }
@@ -123,6 +120,8 @@
    var(--fs-timer-lg); the 1.2x bump is deliberate emphasis.
    ---------------------------------------------------------------------- */
 .focus .center {
+  position: fixed;
+  left: 50%;
   top: 20%;
   transform: translate(-50%, -50%) scale(1.2);
 }
@@ -155,14 +154,9 @@
 }
 
 /* Narrow portrait — PortraitPrompt usually covers, but degrade
-   gracefully: center the sidebar, drop history + cube. */
+   gracefully: drop history + cube. Panel positioning is no longer
+   overridden here since it would conflict with saved/editor geometry. */
 @media (max-width: 640px) and (orientation: portrait) {
-  .sidebar {
-    left: 50%;
-    transform: translateX(-50%);
-    width: auto;
-    max-width: 90vw;
-  }
   .historyBox,
   .cubeBox {
     display: none;
