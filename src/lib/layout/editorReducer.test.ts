@@ -329,6 +329,41 @@ describe("END_INTERACTION", () => {
   });
 });
 
+describe("SYNC_LAYOUT", () => {
+  it("is a no-op (same reference) when the incoming layout matches by value", () => {
+    // A caller that mirrors `state.layout` back in as a prop always passes a
+    // fresh clone, even when nothing changed. If this ever created a new
+    // `state.layout` reference, it would re-fire the caller's own effect,
+    // which would SYNC_LAYOUT again — an infinite loop.
+    const state = createEditorState(DEFAULT_HUD_LAYOUT);
+    const echoedBack = { ...DEFAULT_HUD_LAYOUT, sidebar: { ...DEFAULT_HUD_LAYOUT.sidebar } };
+    const next = editorReducer(state, { type: "SYNC_LAYOUT", layout: echoedBack });
+    expect(next).toBe(state);
+  });
+
+  it("adopts a genuinely different incoming layout", () => {
+    const state = createEditorState(DEFAULT_HUD_LAYOUT);
+    const changed = withLayout({ timer: { x: 0.1, y: 0.1, width: 0.3, height: 0.2 } });
+    const next = editorReducer(state, { type: "SYNC_LAYOUT", layout: changed });
+    expect(next.layout).toEqual(changed);
+    expect(next).not.toBe(state);
+  });
+
+  it("ignores an incoming layout while an interaction is active, even if it differs", () => {
+    const editing = editorReducer(createEditorState(DEFAULT_HUD_LAYOUT), { type: "TOGGLE_EDIT" });
+    const dragging = editorReducer(editing, {
+      type: "START_DRAG",
+      item: "timer",
+      clientX: 0,
+      clientY: 0,
+      viewport,
+    });
+    const changed = withLayout({ timer: { x: 0.1, y: 0.1, width: 0.3, height: 0.2 } });
+    const next = editorReducer(dragging, { type: "SYNC_LAYOUT", layout: changed });
+    expect(next).toBe(dragging);
+  });
+});
+
 describe("RESET", () => {
   it("replaces every configurable item with the defaults and clears storage", () => {
     const layout = withLayout({

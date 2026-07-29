@@ -160,18 +160,26 @@ export function LayoutEditor({
     dispatch({ type: "SET_DISABLED", disabled });
   }, [disabled]);
 
-  // Notify the parent on every layout change, including intermediate
-  // pointer moves — not just commits — so panel content that the parent
-  // sizes from its own `layout` prop (e.g. TimerView's natural-size-based
-  // scale for timer/cube, or the sidebar's real width) tracks the drag in
-  // real time instead of jumping only once the gesture ends. This is safe:
-  // `saveHudLayout` (the actually expensive part) still only runs from the
-  // reducer's own END_INTERACTION/RESET cases, not from this effect, and
-  // `SYNC_LAYOUT` ignores the resulting round-trip while an interaction is
-  // active, so it can't fight an in-progress drag.
+  // Notify the parent on every layout change WHILE an interaction is active
+  // (not just on commit), so panel content the parent sizes from its own
+  // `layout` prop (e.g. TimerView's natural-size-based scale for
+  // timer/cube, or the sidebar's real width) tracks a drag in real time
+  // instead of jumping only once the gesture ends. This is only safe
+  // during an interaction, because `SYNC_LAYOUT` (below) unconditionally
+  // ignores the resulting round-trip while `state.interaction` is set —
+  // outside of that, echoing a fresh-but-value-equal layout back in would
+  // otherwise risk ping-ponging indefinitely, so idle changes stay gated to
+  // real commits (revision bumps: interaction end or reset).
+  const lastRevision = useRef(state.revision);
   useEffect(() => {
-    onLayoutChange(state.layout);
-  }, [state.layout, onLayoutChange]);
+    const isCommit = state.revision !== lastRevision.current;
+    if (isCommit) {
+      lastRevision.current = state.revision;
+    }
+    if (state.interaction || isCommit) {
+      onLayoutChange(state.layout);
+    }
+  }, [state.layout, state.interaction, state.revision, onLayoutChange]);
 
   const itemStyle = (id: PanelId): CSSProperties => panelPositionStyle(state.layout[id]);
 

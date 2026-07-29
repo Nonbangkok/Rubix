@@ -193,6 +193,15 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       if (state.interaction) {
         return state;
       }
+      // Bail out (same reference) when the incoming layout already matches
+      // by value. Callers that mirror `state.layout` back in as a prop
+      // (e.g. to derive rendering from it) always pass a fresh clone even
+      // when nothing changed; without this check, that would create a new
+      // `state.layout` reference, which fires the caller's own effect
+      // again, which SYNC_LAYOUTs again — an infinite loop.
+      if (layoutEquals(state.layout, action.layout)) {
+        return state;
+      }
       return { ...state, layout: cloneLayout(action.layout) };
     }
     default:
