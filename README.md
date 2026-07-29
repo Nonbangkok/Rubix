@@ -65,6 +65,18 @@ Open [http://localhost:3000](http://localhost:3000) and grant camera permissions
 5. **Stop**: Place both hands back on the pads immediately after solving to stop the clock.
 6. **Reset**: Lift your hands again to return to IDLE state.
 
+### 🎛 Customize Layout
+
+While the timer is idle (not running), a pencil icon appears in the bottom-right corner:
+
+1. Tap the pencil to enter **edit mode**.
+2. Drag or resize the stats/history panel, timer, cube panel, and the two hand-detection zones freely.
+3. Panels snap magnetically near the four corners and the four edge midpoints for quick alignment — you can still drop them anywhere else.
+4. A **Reset** button appears once your layout differs from the default, restoring all five elements at once.
+5. Tap the pencil again to finish editing.
+
+Your layout is saved automatically in the browser (`localStorage`) and restored the next time you open the app.
+
 ---
 
 ## 🤝 Contributing
