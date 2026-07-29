@@ -7,6 +7,7 @@ import {
   editorReducer,
   selectShowReset,
 } from "@/lib/layout/editorReducer";
+import { DEFAULT_HUD_LAYOUT } from "@/lib/layout/defaults";
 import { mirrorHandleX, mirrorRectX } from "@/lib/layout/geometry";
 import type { HudLayout, LayoutItemId, LayoutRect, ResizeHandle } from "@/lib/layout/types";
 import styles from "./LayoutEditor.module.css";
@@ -65,6 +66,26 @@ function currentViewport() {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
+// Panel content (sidebar/timer/cube) is sized internally in vmin units
+// calibrated to its DEFAULT footprint, so it never stretches to fill a
+// resized wrapper on its own. Instead, keep the wrapper at its natural
+// default size and visually scale the whole thing — chrome and content
+// together — to match the current (possibly resized) rectangle.
+function scaledItemStyle(id: PanelId, rect: LayoutRect): CSSProperties {
+  const base = DEFAULT_HUD_LAYOUT[id];
+  const scaleX = rect.width / base.width;
+  const scaleY = rect.height / base.height;
+  return {
+    position: "fixed",
+    left: `${rect.x * 100}%`,
+    top: `${rect.y * 100}%`,
+    width: `${base.width * 100}%`,
+    height: `${base.height * 100}%`,
+    transform: `scale(${scaleX}, ${scaleY})`,
+    transformOrigin: "top left",
+  };
+}
+
 export function LayoutEditor({ layout, onLayoutChange, disabled, children }: LayoutEditorProps) {
   const [state, dispatch] = useReducer(editorReducer, undefined, () =>
     createEditorState(layout, disabled),
@@ -95,7 +116,7 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
     }
   }, [state.revision, state.layout, onLayoutChange]);
 
-  const itemStyle = (id: PanelId): CSSProperties => rectStyle(state.layout[id]);
+  const itemStyle = (id: PanelId): CSSProperties => scaledItemStyle(id, state.layout[id]);
 
   const startDrag =
     (item: LayoutItemId) => (event: ReactPointerEvent<HTMLDivElement>) => {

@@ -126,11 +126,14 @@
   transform: translate(-50%, -50%) scale(1.2);
 }
 
+/* No transform here: the panel wrapper already carries an inline
+   `transform: scale(...)` (see LayoutEditor's scaledItemStyle) to match its
+   resized footprint, and inline styles always win over this class for the
+   same property, so a translateY here would silently never apply. */
 .focus .sidebar,
 .focus .cubeBox {
   opacity: 0;
   pointer-events: none;
-  transform: translateY(calc(var(--sp-2) * -1));
 }
 
 /* ----------------------------------------------------------------------
