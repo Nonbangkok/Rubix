@@ -23,7 +23,7 @@ import type {
 } from "@/lib/layout/types";
 import styles from "./LayoutEditor.module.css";
 
-type PanelId = "sidebar" | "timer" | "cube";
+export type PanelId = "sidebar" | "timer" | "cube";
 
 const PANEL_IDS: readonly PanelId[] = ["sidebar", "timer", "cube"];
 const ZONE_IDS: readonly LayoutItemId[] = ["leftZone", "rightZone"];
@@ -64,6 +64,20 @@ type LayoutEditorProps = {
    * `object-cover`). Until it's measured, zone editing falls back to a
    * plain mirror with no crop correction. */
   cameraSize?: { width: number; height: number };
+  /**
+   * The panel's ACTUAL current rendered footprint, measured by TimerView
+   * (which owns the real DOM nodes). Panel content is aspect-locked and
+   * uniformly scaled to fit inside `layout[id]` without distorting it,
+   * which can leave it smaller than the saved rect on one axis (e.g. the
+   * saved rect's aspect ratio doesn't exactly match the content's true
+   * one), and the sidebar's height is intrinsic/auto rather than a value
+   * that's ever "resized" to. The edit-mode overlay always shows this
+   * actual box rather than the saved target, since it exists purely to
+   * show the user what they're editing without lying about size —
+   * falls back to `layout[id]` for any item not yet measured (e.g. on
+   * first paint, before layout effects run).
+   */
+  panelDisplayRects?: Partial<Record<PanelId, LayoutRect>>;
   children: (itemStyle: (id: PanelId) => CSSProperties) => ReactNode;
 };
 
@@ -124,6 +138,7 @@ export function LayoutEditor({
   onLayoutChange,
   disabled,
   cameraSize,
+  panelDisplayRects,
   children,
 }: LayoutEditorProps) {
   const [state, dispatch] = useReducer(editorReducer, undefined, () =>
@@ -259,7 +274,9 @@ export function LayoutEditor({
               .filter(Boolean)
               .join(" ");
 
-            const displayRect = isMirrored(id) ? zoneDisplayRect(id) : state.layout[id];
+            const displayRect = isMirrored(id)
+              ? zoneDisplayRect(id)
+              : (panelDisplayRects?.[id as PanelId] ?? state.layout[id]);
 
             return (
               <div

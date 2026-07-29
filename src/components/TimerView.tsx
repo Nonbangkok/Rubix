@@ -89,21 +89,47 @@ function useVideoSize(videoRef: RefObject<HTMLVideoElement | null>): Size {
   return size;
 }
 
-function scaleStyle(rect: LayoutRect, natural: Size, viewport: Size): CSSProperties {
+// A single uniform factor, not independent scaleX/scaleY: panels are
+// aspect-locked when resized, but the saved rect's ratio can still differ
+// slightly from the content's true measured ratio, and scaling each axis
+// independently would stretch circles into ellipses. `min` keeps the
+// content fully inside the target box rather than overflowing it — which
+// means the actual rendered box can end up smaller than the saved rect on
+// one axis; `panelDisplayRect` below reports that true footprint so the
+// edit-mode overlay never shows a box bigger than what's really there.
+function panelScale(rect: LayoutRect, natural: Size, viewport: Size): number | null {
   if (!natural.width || !natural.height || !viewport.width || !viewport.height) {
-    // Not measured yet (e.g. first paint) — render at natural size rather
-    // than guessing, so there's never a visibly wrong scale.
-    return {};
+    return null;
   }
   const scaleX = (rect.width * viewport.width) / natural.width;
   const scaleY = (rect.height * viewport.height) / natural.height;
-  // A single uniform factor, not independent scaleX/scaleY: panels are
-  // aspect-locked when resized, but the saved rect's ratio can still differ
-  // slightly from the content's true measured ratio, and scaling each axis
-  // independently would stretch circles into ellipses. `min` keeps the
-  // content fully inside the target box rather than overflowing it.
-  const scale = Math.min(scaleX, scaleY);
-  return { transform: `scale(${scale})`, transformOrigin: "top left" };
+  return Math.min(scaleX, scaleY);
+}
+
+function scaleStyle(scale: number | null): CSSProperties {
+  return scale === null ? {} : { transform: `scale(${scale})`, transformOrigin: "top left" };
+}
+
+function panelDisplayRect(
+  rect: LayoutRect,
+  natural: Size,
+  scale: number | null,
+  viewport: Size,
+): LayoutRect | undefined {
+  if (scale === null || !viewport.width || !viewport.height) return undefined;
+  return {
+    x: rect.x,
+    y: rect.y,
+    width: (natural.width * scale) / viewport.width,
+    height: (natural.height * scale) / viewport.height,
+  };
+}
+
+function sidebarDisplayRect(rect: LayoutRect, natural: Size, viewport: Size): LayoutRect | undefined {
+  if (!natural.height || !viewport.height) return undefined;
+  // Width is real CSS (not scaled), so it already equals `rect.width`;
+  // height is intrinsic/auto, so only the measured value reflects reality.
+  return { x: rect.x, y: rect.y, width: rect.width, height: natural.height / viewport.height };
 }
 
 export function TimerView() {
@@ -127,10 +153,20 @@ export function TimerView() {
 
   const viewport = useViewportSize();
   const videoSize = useVideoSize(videoRef);
+  const sidebarRef = useRef<HTMLElement | null>(null);
   const timerRef = useRef<HTMLElement | null>(null);
   const cubeRef = useRef<HTMLElement | null>(null);
+  const sidebarNatural = useNaturalSize(sidebarRef);
   const timerNatural = useNaturalSize(timerRef);
   const cubeNatural = useNaturalSize(cubeRef);
+
+  const timerScale = panelScale(layout.timer, timerNatural, viewport);
+  const cubeScale = panelScale(layout.cube, cubeNatural, viewport);
+  const panelDisplayRects = {
+    sidebar: sidebarDisplayRect(layout.sidebar, sidebarNatural, viewport),
+    timer: panelDisplayRect(layout.timer, timerNatural, timerScale, viewport),
+    cube: panelDisplayRect(layout.cube, cubeNatural, cubeScale, viewport),
+  };
 
   return (
     <div
@@ -149,6 +185,7 @@ export function TimerView() {
         onLayoutChange={setLayout}
         disabled={!canEditLayout(phase)}
         cameraSize={videoSize.width && videoSize.height ? videoSize : undefined}
+        panelDisplayRects={panelDisplayRects}
       >
         {(itemStyle) => (
           <>
@@ -160,6 +197,7 @@ export function TimerView() {
               natural, un-scaled size regardless of resize).
             */}
             <aside
+              ref={sidebarRef}
               className={styles.sidebar}
               style={{ ...itemStyle("sidebar"), width: `${layout.sidebar.width * 100}%` }}
             >
@@ -213,7 +251,7 @@ export function TimerView() {
               style={
                 focusMode
                   ? undefined
-                  : { ...itemStyle("timer"), ...scaleStyle(layout.timer, timerNatural, viewport) }
+                  : { ...itemStyle("timer"), ...scaleStyle(timerScale) }
               }
             >
               <TimerScreen>
@@ -226,7 +264,7 @@ export function TimerView() {
             <aside
               ref={cubeRef}
               className={styles.cubeBox}
-              style={{ ...itemStyle("cube"), ...scaleStyle(layout.cube, cubeNatural, viewport) }}
+              style={{ ...itemStyle("cube"), ...scaleStyle(cubeScale) }}
             >
               <CubePanel />
             </aside>
