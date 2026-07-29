@@ -64,8 +64,11 @@
 
 .body3d {
   /* Purely a visual shrink of the 3D cube within the same fixed .body
-     box above — does not affect layout size (transform never does). */
-  transform: scale(0.65);
+     box above — does not affect layout size (transform never does).
+     0.5 (not 0.65) leaves enough margin that the cube's rotated corners
+     stay inside .body/.panel at any rotation angle instead of reaching
+     (and needing to be clipped by) the panel's edge. */
+  transform: scale(0.5);
 }
 
 /* Mobile landscape — short vertical axis; shrink the panel so it
