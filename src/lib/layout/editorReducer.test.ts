@@ -230,6 +230,34 @@ describe("panel resizing", () => {
     expect(moved.layout.sidebar.width).toBeCloseTo(0.4);
   });
 
+  it("locks aspect-ratio resizing to an explicit aspectRatio, not the saved rect's own ratio", () => {
+    // The saved rect is 4:3, but the panel's TRUE measured content ratio
+    // (passed at START_RESIZE, as TimerView does using its natural-size
+    // measurement) is 2:1 — the resize must honor that, not 4:3, so the
+    // saved rect always matches what's actually rendered.
+    const layout = withLayout({ cube: { x: 0.2, y: 0.3, width: 0.4, height: 0.3 } });
+    const editing = editorReducer(createEditorState(layout), { type: "TOGGLE_EDIT" });
+    const started = editorReducer(editing, {
+      type: "START_RESIZE",
+      item: "cube",
+      handle: "bottom-right",
+      aspectRatio: 2,
+      clientX: 0,
+      clientY: 0,
+      viewport,
+    });
+    const moved = editorReducer(started, {
+      type: "MOVE",
+      clientX: 100,
+      clientY: 40,
+      viewport,
+    });
+
+    expect(moved.layout.cube.width / moved.layout.cube.height).toBeCloseTo(2);
+    expect(moved.layout.cube.x).toBeCloseTo(0.2);
+    expect(moved.layout.cube.y).toBeCloseTo(0.3);
+  });
+
   it("resizes leftZone/rightZone freely, without locking their aspect ratio", () => {
     const layout = withLayout({ leftZone: { x: 0.1, y: 0.1, width: 0.3, height: 0.3 } });
     const editing = editorReducer(createEditorState(layout), { type: "TOGGLE_EDIT" });

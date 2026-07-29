@@ -223,10 +223,19 @@ export function LayoutEditor({
       // A mirrored (displayed) box's visually-top-left handle corresponds to
       // the raw rectangle's top-right corner, so translate the handle too.
       const rawHandle = isMirrored(item) ? mirrorHandleX(handle) : handle;
+      // Lock aspect-ratio resizing (timer/cube) to the panel's TRUE measured
+      // content ratio rather than the saved rect's own — see
+      // `resizeRectLocked`'s doc comment for why they can differ.
+      const displayRect = panelDisplayRects?.[item as PanelId];
+      const aspectRatio =
+        (item === "timer" || item === "cube") && displayRect?.width && displayRect.height
+          ? displayRect.width / displayRect.height
+          : undefined;
       dispatch({
         type: "START_RESIZE",
         item,
         handle: rawHandle,
+        aspectRatio,
         clientX: point.x,
         clientY: point.y,
         viewport,

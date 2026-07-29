@@ -27,6 +27,15 @@ export type ActiveInteraction = {
   originRect: LayoutRect;
   /** True once the current pointer position has engaged magnetic snapping. */
   snapped: boolean;
+  /**
+   * The panel's TRUE measured content aspect ratio (width/height), for
+   * aspect-locked items (timer/cube) only. When provided, resizing locks to
+   * this instead of `originRect`'s own ratio, so the saved rect's ratio
+   * always exactly matches what's actually rendered — otherwise a saved
+   * rect with a slightly different ratio than the content's real one can
+   * leave the true displayed box smaller than the saved rect on one axis.
+   */
+  aspectRatio?: number;
 };
 
 export type EditorState = {
@@ -42,7 +51,12 @@ export type EditorAction =
   | { type: "SET_DISABLED"; disabled: boolean }
   | { type: "TOGGLE_EDIT" }
   | ({ type: "START_DRAG"; item: LayoutItemId } & PointerPayload)
-  | ({ type: "START_RESIZE"; item: LayoutItemId; handle: ResizeHandle } & PointerPayload)
+  | ({
+      type: "START_RESIZE";
+      item: LayoutItemId;
+      handle: ResizeHandle;
+      aspectRatio?: number;
+    } & PointerPayload)
   | ({ type: "MOVE" } & PointerPayload)
   | { type: "END_INTERACTION" }
   | { type: "RESET" }
@@ -100,7 +114,14 @@ function applyMove(state: EditorState, action: Extract<EditorAction, { type: "MO
     if (interaction.item === "sidebar") {
       rawRect = resizeRectWidthOnly(interaction.originRect, interaction.handle, point, minSize);
     } else if (interaction.item === "timer" || interaction.item === "cube") {
-      rawRect = resizeRectLocked(interaction.originRect, interaction.handle, point, minSize, minSize);
+      rawRect = resizeRectLocked(
+        interaction.originRect,
+        interaction.handle,
+        point,
+        minSize,
+        minSize,
+        interaction.aspectRatio,
+      );
     } else {
       rawRect = resizeRect(interaction.originRect, interaction.handle, point, minSize, minSize);
     }
@@ -171,6 +192,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
           originClientY: action.clientY,
           originRect: state.layout[action.item],
           snapped: false,
+          aspectRatio: action.aspectRatio,
         },
       };
     }

@@ -3,6 +3,7 @@ import {
   cameraRectToScreenRect,
   clampRect,
   layoutEquals,
+  MIN_PANEL_SIZE,
   mirrorHandleX,
   mirrorRectX,
   resizeRect,
@@ -121,6 +122,18 @@ describe("resizeRectLocked", () => {
         break;
     }
     expect(result.width / result.height).toBeCloseTo(aspect);
+  });
+
+  it("locks to an explicit aspectOverride instead of the rect's own ratio", () => {
+    // `rect` is 4:3, but a caller can supply the panel's TRUE measured
+    // aspect ratio (e.g. 2:1) when it differs from the saved rect's own —
+    // the result must honor that override, not the rect's 4:3 shape.
+    const trueAspect = 2;
+    const point = { x: 0.2 + 0.4, y: 0.3 + 0.3 };
+    const result = resizeRectLocked(rect, "bottom-right", point, MIN_PANEL_SIZE, MIN_PANEL_SIZE, trueAspect);
+    expect(result.width / result.height).toBeCloseTo(trueAspect);
+    expect(result.x).toBeCloseTo(rect.x);
+    expect(result.y).toBeCloseTo(rect.y);
   });
 });
 

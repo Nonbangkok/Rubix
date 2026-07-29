@@ -116,8 +116,17 @@ function anchorPoint(rect: LayoutRect, handle: ResizeHandle): NormalizedPoint {
 
 /**
  * Resizes one corner while keeping the diagonally opposite corner fixed AND
- * preserving the aspect ratio of the ORIGINAL rectangle (`rect`, expected to be
- * the rect at drag start, e.g. `interaction.originRect`).
+ * preserving an aspect ratio. By default that's the ORIGINAL rectangle's own
+ * ratio (`rect`, expected to be the rect at drag start, e.g.
+ * `interaction.originRect`) — but callers that know the panel's TRUE
+ * measured content aspect ratio (which can differ slightly from whatever
+ * the saved rect's ratio happens to be, e.g. from an imprecise default)
+ * should pass it as `aspectOverride`, so the resized rect's ratio always
+ * exactly matches what's actually rendered. Without this, the panel's
+ * uniform display scale (`min(scaleX, scaleY)`, needed to avoid distorting
+ * circular content) can leave the true rendered box smaller than the saved
+ * rect on one axis — visibly, e.g. as a resize that never quite reaches a
+ * screen edge it should snap flush to.
  */
 export function resizeRectLocked(
   rect: LayoutRect,
@@ -125,8 +134,9 @@ export function resizeRectLocked(
   point: NormalizedPoint,
   minWidth = MIN_PANEL_SIZE,
   minHeight = minWidth,
+  aspectOverride?: number,
 ): LayoutRect {
-  const aspect = rect.width / rect.height;
+  const aspect = aspectOverride ?? rect.width / rect.height;
   const widthFloor = minimumSize(minWidth);
   const heightFloor = minimumSize(minHeight);
   const anchor = anchorPoint(rect, handle);
