@@ -1,10 +1,14 @@
 .strip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--sp-3);
   /* Fixed width (not max-width): a short scramble must not shrink the
      strip, since that would shrink the timer panel's whole natural size
-     along with it. Long scrambles still truncate via .moves' ellipsis. */
+     along with it. Long scrambles still truncate via .moves' ellipsis.
+     justify-content centers the label/text/button group within that
+     fixed width instead of leaving them flush-left with dead space when
+     the scramble is short. */
   width: min(72ch, 90vmin);
   padding: var(--sp-2) var(--sp-4);
   border-radius: var(--rd-pill);
