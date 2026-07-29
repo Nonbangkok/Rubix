@@ -152,6 +152,32 @@ export function resizeRectLocked(
   return clampRect({ x: left, y: top, width, height }, minWidth, minHeight);
 }
 
+/**
+ * Resizes width only, from whichever side (left/right) the handle sits on —
+ * `y`/`height` are always left exactly as in `rect`. Used for the sidebar,
+ * whose height must stay intrinsic to its content (it grows on its own as
+ * solve history accumulates) rather than being a value the user drags.
+ */
+export function resizeRectWidthOnly(
+  rect: LayoutRect,
+  handle: ResizeHandle,
+  point: NormalizedPoint,
+  minWidth = MIN_PANEL_SIZE,
+): LayoutRect {
+  const widthFloor = minimumSize(minWidth);
+  const pointX = finiteOr(point.x, rect.x);
+  const isLeftHandle = handle === "top-left" || handle === "bottom-left";
+
+  if (isLeftHandle) {
+    const right = rect.x + rect.width;
+    const x = bounded(pointX, 0, right - widthFloor);
+    return roundedRect({ x, y: rect.y, width: right - x, height: rect.height });
+  }
+
+  const width = bounded(pointX - rect.x, widthFloor, 1 - rect.x);
+  return roundedRect({ x: rect.x, y: rect.y, width, height: rect.height });
+}
+
 /** Snaps a rectangle near a corner or edge centre, preserving its dimensions. */
 export function snapRect(rect: LayoutRect, viewport: ViewportSize): LayoutRect {
   const current = clampRect(rect);

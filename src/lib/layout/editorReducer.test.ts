@@ -203,6 +203,33 @@ describe("panel resizing", () => {
     expect(moved.layout.cube.width / moved.layout.cube.height).toBeCloseTo(0.4 / 0.3);
   });
 
+  it("resizes the sidebar's width only, leaving its position/height untouched", () => {
+    const layout = withLayout({ sidebar: { x: 0.1, y: 0.2, width: 0.3, height: 0.5 } });
+    const editing = editorReducer(createEditorState(layout), { type: "TOGGLE_EDIT" });
+    const started = editorReducer(editing, {
+      type: "START_RESIZE",
+      item: "sidebar",
+      handle: "bottom-right",
+      clientX: 0,
+      clientY: 0,
+      viewport,
+    });
+    // Drag the bottom-right handle both right and down; only the rightward
+    // (x-axis) component should have any effect, since the sidebar's height
+    // is meant to stay intrinsic to its content, not a value the user drags.
+    const moved = editorReducer(started, {
+      type: "MOVE",
+      clientX: 100,
+      clientY: 400,
+      viewport,
+    });
+
+    expect(moved.layout.sidebar.x).toBeCloseTo(0.1);
+    expect(moved.layout.sidebar.y).toBe(0.2);
+    expect(moved.layout.sidebar.height).toBe(0.5);
+    expect(moved.layout.sidebar.width).toBeCloseTo(0.4);
+  });
+
   it("resizes leftZone/rightZone freely, without locking their aspect ratio", () => {
     const layout = withLayout({ leftZone: { x: 0.1, y: 0.1, width: 0.3, height: 0.3 } });
     const editing = editorReducer(createEditorState(layout), { type: "TOGGLE_EDIT" });

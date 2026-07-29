@@ -6,6 +6,7 @@ import {
   mirrorRectX,
   resizeRect,
   resizeRectLocked,
+  resizeRectWidthOnly,
   snapRect,
   zoneRectFromLayout,
 } from "./geometry";
@@ -118,6 +119,37 @@ describe("resizeRectLocked", () => {
         break;
     }
     expect(result.width / result.height).toBeCloseTo(aspect);
+  });
+});
+
+describe("resizeRectWidthOnly", () => {
+  const rect = { x: 0.2, y: 0.3, width: 0.4, height: 0.3 };
+
+  it.each([
+    ["top-left", { x: 0.1, y: 0.9 }],
+    ["bottom-left", { x: 0.1, y: -0.5 }],
+  ] as const)("extends the left edge for the %s handle, ignoring the y component", (handle, point) => {
+    const result = resizeRectWidthOnly(rect, handle, point);
+    expect(result).toEqual({ x: 0.1, y: rect.y, width: 0.5, height: rect.height });
+  });
+
+  it.each([
+    ["top-right", { x: 0.7, y: 0.9 }],
+    ["bottom-right", { x: 0.7, y: -0.5 }],
+  ] as const)("extends the right edge for the %s handle, ignoring the y component", (handle, point) => {
+    const result = resizeRectWidthOnly(rect, handle, point);
+    expect(result).toEqual({ x: rect.x, y: rect.y, width: 0.5, height: rect.height });
+  });
+
+  it("never changes y or height", () => {
+    const result = resizeRectWidthOnly(rect, "bottom-right", { x: 0.9, y: 0.05 });
+    expect(result.y).toBe(rect.y);
+    expect(result.height).toBe(rect.height);
+  });
+
+  it("enforces the minimum width floor", () => {
+    const result = resizeRectWidthOnly(rect, "top-right", { x: 0.21, y: 0.5 }, 0.15);
+    expect(result.width).toBeCloseTo(0.15);
   });
 });
 

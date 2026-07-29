@@ -1,5 +1,13 @@
 import { DEFAULT_HUD_LAYOUT } from "./defaults";
-import { clampRect, layoutEquals, minimumSizeForItem, resizeRect, resizeRectLocked, snapRect } from "./geometry";
+import {
+  clampRect,
+  layoutEquals,
+  minimumSizeForItem,
+  resizeRect,
+  resizeRectLocked,
+  resizeRectWidthOnly,
+  snapRect,
+} from "./geometry";
 import { clearHudLayout, saveHudLayout } from "./storage";
 import type { HudLayout, LayoutItemId, LayoutRect, NormalizedPoint, ResizeHandle, ViewportSize } from "./types";
 
@@ -78,26 +86,31 @@ function applyMove(state: EditorState, action: Extract<EditorAction, { type: "MO
   const dx = (action.clientX - interaction.originClientX) / action.viewport.width;
   const dy = (action.clientY - interaction.originClientY) / action.viewport.height;
   const minSize = minimumSizeForItem(interaction.item);
-  const isAspectLocked =
-    interaction.item === "sidebar" || interaction.item === "timer" || interaction.item === "cube";
-  const resize = isAspectLocked ? resizeRectLocked : resizeRect;
 
-  const rawRect: LayoutRect = interaction.handle
-    ? resize(
-        interaction.originRect,
-        interaction.handle,
-        {
-          x: cornerPoint(interaction.originRect, interaction.handle).x + dx,
-          y: cornerPoint(interaction.originRect, interaction.handle).y + dy,
-        },
-        minSize,
-        minSize,
-      )
-    : {
-        ...interaction.originRect,
-        x: interaction.originRect.x + dx,
-        y: interaction.originRect.y + dy,
-      };
+  let rawRect: LayoutRect;
+  if (interaction.handle) {
+    const point = {
+      x: cornerPoint(interaction.originRect, interaction.handle).x + dx,
+      y: cornerPoint(interaction.originRect, interaction.handle).y + dy,
+    };
+    // The sidebar's height must stay intrinsic to its content (it grows on
+    // its own as history accumulates), so only its width is draggable.
+    // Timer/cube keep their aspect ratio; the hand-detection zones resize
+    // freely in both dimensions.
+    if (interaction.item === "sidebar") {
+      rawRect = resizeRectWidthOnly(interaction.originRect, interaction.handle, point, minSize);
+    } else if (interaction.item === "timer" || interaction.item === "cube") {
+      rawRect = resizeRectLocked(interaction.originRect, interaction.handle, point, minSize, minSize);
+    } else {
+      rawRect = resizeRect(interaction.originRect, interaction.handle, point, minSize, minSize);
+    }
+  } else {
+    rawRect = {
+      ...interaction.originRect,
+      x: interaction.originRect.x + dx,
+      y: interaction.originRect.y + dy,
+    };
+  }
 
   const clamped = clampRect(rawRect, minSize, minSize);
   const snappedRect = snapRect(clamped, action.viewport);

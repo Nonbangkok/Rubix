@@ -24,11 +24,12 @@ import styles from "./TimerView.module.css";
 type Size = { width: number; height: number };
 const ZERO_SIZE: Size = { width: 0, height: 0 };
 
-// Panel content (sidebar/timer/cube) is sized in vmin units, independent of
-// the resizable box LayoutEditor positions it at — so a resized box doesn't
-// make the visible content bigger on its own. Measure each panel's real
-// rendered footprint (border box, to include its own padding/border) and
-// scale the whole element to match the saved rect exactly.
+// Timer/cube content is sized in vmin units, independent of the resizable
+// box LayoutEditor positions it at — so a resized box doesn't make the
+// visible content bigger on its own. Measure each panel's real rendered
+// footprint (border box, to include its own padding/border) and scale the
+// whole element to match the saved rect exactly. (The sidebar doesn't use
+// this — see its own comment below.)
 function useNaturalSize(ref: RefObject<HTMLElement | null>): Size {
   const [size, setSize] = useState<Size>(ZERO_SIZE);
 
@@ -96,10 +97,8 @@ export function TimerView() {
   const focusMode = phase === "RUNNING";
 
   const viewport = useViewportSize();
-  const sidebarRef = useRef<HTMLElement | null>(null);
   const timerRef = useRef<HTMLElement | null>(null);
   const cubeRef = useRef<HTMLElement | null>(null);
-  const sidebarNatural = useNaturalSize(sidebarRef);
   const timerNatural = useNaturalSize(timerRef);
   const cubeNatural = useNaturalSize(cubeRef);
 
@@ -122,13 +121,16 @@ export function TimerView() {
       >
         {(itemStyle) => (
           <>
+            {/*
+              The sidebar's height is intentionally intrinsic — it grows on
+              its own as solve history accumulates — so only width comes
+              from the saved rect (as a real CSS width, not a transform),
+              and no scaling is applied to it at all (its text stays at its
+              natural, un-scaled size regardless of resize).
+            */}
             <aside
-              ref={sidebarRef}
               className={styles.sidebar}
-              style={{
-                ...itemStyle("sidebar"),
-                ...scaleStyle(layout.sidebar, sidebarNatural, viewport),
-              }}
+              style={{ ...itemStyle("sidebar"), width: `${layout.sidebar.width * 100}%` }}
             >
               <div className={styles.header}>
                 <div className={styles.brand}>
