@@ -1,0 +1,150 @@
+/* Sits above the composed HUD panels only while edit mode is active.
+   Nothing here should affect layout or input handling outside edit mode —
+   `touch-action: none` and pointer capture are scoped to these elements
+   alone so the rest of the HUD (e.g. Cube3D's own drag) is unaffected. */
+.overlayLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.overlay {
+  pointer-events: auto;
+  box-sizing: border-box;
+  border: 2px dashed rgba(0, 229, 255, 0.75);
+  border-radius: var(--rd-sm);
+  background: rgba(0, 229, 255, 0.06);
+  cursor: move;
+  touch-action: none;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.zoneOverlay {
+  border-color: rgba(255, 200, 0, 0.75);
+  background: rgba(255, 200, 0, 0.05);
+}
+
+.overlayActive {
+  border-color: rgba(0, 229, 255, 1);
+  background: rgba(0, 229, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.4), 0 var(--sp-2) var(--sp-4) rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
+
+.zoneOverlay.overlayActive {
+  border-color: rgba(255, 200, 0, 1);
+  background: rgba(255, 200, 0, 0.14);
+  box-shadow: 0 0 0 1px rgba(255, 200, 0, 0.4), 0 var(--sp-2) var(--sp-4) rgba(0, 0, 0, 0.4);
+}
+
+/* Magnetic-snap feedback: a brief high-contrast pulse while a corner or
+   edge-centre target is engaged. */
+.snapHighlight {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px #fff, 0 0 var(--sp-6) rgba(255, 255, 255, 0.6);
+}
+
+.zoneLabel {
+  position: absolute;
+  top: var(--sp-2);
+  left: var(--sp-2);
+  font-family: var(--font-display), monospace;
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.45);
+  padding: 2px var(--sp-2);
+  border-radius: var(--rd-sm);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.handle {
+  position: absolute;
+  width: var(--sp-6);
+  height: var(--sp-6);
+  border-radius: 50%;
+  background: #fff;
+  border: var(--border-hair) solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  touch-action: none;
+  transform: translate(-50%, -50%);
+}
+
+.handleTopLeft {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+.handleTopRight {
+  top: 0;
+  left: 100%;
+  cursor: nesw-resize;
+}
+
+.handleBottomLeft {
+  top: 100%;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+.handleBottomRight {
+  top: 100%;
+  left: 100%;
+  cursor: nwse-resize;
+}
+
+.controls {
+  position: fixed;
+  right: var(--sp-5);
+  bottom: var(--sp-5);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.pencilButton,
+.resetButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  font-family: var(--font-display), monospace;
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(var(--blur-soft));
+  -webkit-backdrop-filter: blur(var(--blur-soft));
+  border: var(--border-hair) solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--rd-pill);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pencilButton {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.pencilButton:hover {
+  background: rgba(0, 229, 255, 0.18);
+  border-color: rgba(0, 229, 255, 0.4);
+  color: #fff;
+}
+
+.resetButton {
+  padding: var(--sp-2) var(--sp-4);
+}
+
+.resetButton:hover {
+  background: rgba(255, 80, 120, 0.18);
+  border-color: rgba(255, 80, 120, 0.4);
+  color: rgba(255, 140, 160, 0.95);
+}

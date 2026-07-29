@@ -1,0 +1,190 @@
+import { DEFAULT_HUD_LAYOUT } from "./defaults";
+import { clampRect, layoutEquals, minimumSizeForItem, resizeRect, snapRect } from "./geometry";
+import { clearHudLayout, saveHudLayout } from "./storage";
+import type { HudLayout, LayoutItemId, LayoutRect, NormalizedPoint, ResizeHandle, ViewportSize } from "./types";
+
+/** Pointer data accompanying an interaction-related action. */
+export type PointerPayload = {
+  clientX: number;
+  clientY: number;
+  viewport: ViewportSize;
+};
+
+/** Transient state for a drag or resize in progress. Kept apart from `HudLayout`. */
+export type ActiveInteraction = {
+  item: LayoutItemId;
+  handle: ResizeHandle | null;
+  originClientX: number;
+  originClientY: number;
+  originRect: LayoutRect;
+  /** True once the current pointer position has engaged magnetic snapping. */
+  snapped: boolean;
+};
+
+export type EditorState = {
+  editing: boolean;
+  disabled: boolean;
+  layout: HudLayout;
+  interaction: ActiveInteraction | null;
+  /** Increments each time `layout` is committed (interaction end or reset). */
+  revision: number;
+};
+
+export type EditorAction =
+  | { type: "SET_DISABLED"; disabled: boolean }
+  | { type: "TOGGLE_EDIT" }
+  | ({ type: "START_DRAG"; item: LayoutItemId } & PointerPayload)
+  | ({ type: "START_RESIZE"; item: LayoutItemId; handle: ResizeHandle } & PointerPayload)
+  | ({ type: "MOVE" } & PointerPayload)
+  | { type: "END_INTERACTION" }
+  | { type: "RESET" }
+  | { type: "SYNC_LAYOUT"; layout: HudLayout };
+
+function cloneLayout(layout: HudLayout): HudLayout {
+  return {
+    sidebar: { ...layout.sidebar },
+    timer: { ...layout.timer },
+    cube: { ...layout.cube },
+    leftZone: { ...layout.leftZone },
+    rightZone: { ...layout.rightZone },
+  };
+}
+
+/** Creates the initial reducer state around a caller-supplied base layout. */
+export function createEditorState(layout: HudLayout, disabled = false): EditorState {
+  return {
+    editing: false,
+    disabled,
+    layout: cloneLayout(layout),
+    interaction: null,
+    revision: 0,
+  };
+}
+
+/** The corner a given resize handle drags, in the rectangle's own coordinates. */
+function cornerPoint(rect: LayoutRect, handle: ResizeHandle): NormalizedPoint {
+  return {
+    x: handle === "top-right" || handle === "bottom-right" ? rect.x + rect.width : rect.x,
+    y: handle === "bottom-left" || handle === "bottom-right" ? rect.y + rect.height : rect.y,
+  };
+}
+
+function applyMove(state: EditorState, action: Extract<EditorAction, { type: "MOVE" }>): EditorState {
+  const interaction = state.interaction;
+  if (!interaction) {
+    return state;
+  }
+
+  const dx = (action.clientX - interaction.originClientX) / action.viewport.width;
+  const dy = (action.clientY - interaction.originClientY) / action.viewport.height;
+  const minSize = minimumSizeForItem(interaction.item);
+
+  const rawRect: LayoutRect = interaction.handle
+    ? resizeRect(
+        interaction.originRect,
+        interaction.handle,
+        {
+          x: cornerPoint(interaction.originRect, interaction.handle).x + dx,
+          y: cornerPoint(interaction.originRect, interaction.handle).y + dy,
+        },
+        minSize,
+        minSize,
+      )
+    : {
+        ...interaction.originRect,
+        x: interaction.originRect.x + dx,
+        y: interaction.originRect.y + dy,
+      };
+
+  const clamped = clampRect(rawRect, minSize, minSize);
+  const snappedRect = snapRect(clamped, action.viewport);
+  const snapped = snappedRect.x !== clamped.x || snappedRect.y !== clamped.y;
+
+  return {
+    ...state,
+    interaction: { ...interaction, snapped },
+    layout: { ...state.layout, [interaction.item]: snappedRect },
+  };
+}
+
+/** Pure reducer for HUD layout edit-mode interactions. */
+export function editorReducer(state: EditorState, action: EditorAction): EditorState {
+  switch (action.type) {
+    case "SET_DISABLED": {
+      if (action.disabled === state.disabled) {
+        return state;
+      }
+      return action.disabled
+        ? { ...state, disabled: true, editing: false, interaction: null }
+        : { ...state, disabled: false };
+    }
+    case "TOGGLE_EDIT": {
+      if (state.disabled) {
+        return state;
+      }
+      return state.editing
+        ? { ...state, editing: false, interaction: null }
+        : { ...state, editing: true };
+    }
+    case "START_DRAG": {
+      if (!state.editing || state.disabled) {
+        return state;
+      }
+      return {
+        ...state,
+        interaction: {
+          item: action.item,
+          handle: null,
+          originClientX: action.clientX,
+          originClientY: action.clientY,
+          originRect: state.layout[action.item],
+          snapped: false,
+        },
+      };
+    }
+    case "START_RESIZE": {
+      if (!state.editing || state.disabled) {
+        return state;
+      }
+      return {
+        ...state,
+        interaction: {
+          item: action.item,
+          handle: action.handle,
+          originClientX: action.clientX,
+          originClientY: action.clientY,
+          originRect: state.layout[action.item],
+          snapped: false,
+        },
+      };
+    }
+    case "MOVE":
+      return applyMove(state, action);
+    case "END_INTERACTION": {
+      if (!state.interaction) {
+        return state;
+      }
+      const next: EditorState = { ...state, interaction: null, revision: state.revision + 1 };
+      saveHudLayout(next.layout);
+      return next;
+    }
+    case "RESET": {
+      const layout = cloneLayout(DEFAULT_HUD_LAYOUT);
+      clearHudLayout();
+      return { ...state, layout, interaction: null, revision: state.revision + 1 };
+    }
+    case "SYNC_LAYOUT": {
+      if (state.interaction) {
+        return state;
+      }
+      return { ...state, layout: cloneLayout(action.layout) };
+    }
+    default:
+      return state;
+  }
+}
+
+/** Reset is only meaningful in edit mode once the layout has actually changed. */
+export function selectShowReset(state: EditorState): boolean {
+  return state.editing && !layoutEquals(state.layout, DEFAULT_HUD_LAYOUT);
+}
