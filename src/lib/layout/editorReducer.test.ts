@@ -140,7 +140,7 @@ describe("panel dragging", () => {
 });
 
 describe("panel resizing", () => {
-  it("modifies the rectangle from the correct handle", () => {
+  it("modifies the rectangle from the correct handle, preserving aspect ratio", () => {
     const layout = withLayout({ cube: { x: 0.2, y: 0.3, width: 0.4, height: 0.3 } });
     const editing = editorReducer(createEditorState(layout), { type: "TOGGLE_EDIT" });
     const started = editorReducer(editing, {
@@ -151,7 +151,12 @@ describe("panel resizing", () => {
       clientY: 0,
       viewport,
     });
-    // Move the bottom-right corner from (0.6, 0.6) to (0.8, 0.8).
+    // Move the bottom-right corner from (0.6, 0.6) to (0.8, 0.8). The pointer's
+    // raw delta (0.2, 0.2) from the anchored top-left corner (0.2, 0.3) would
+    // ask for a 0.6 x 0.5 box, but panels are aspect-locked to the original
+    // 0.4:0.3 (4:3) ratio: the y-axis demand (0.5 * 4/3 = 0.6667) exceeds the
+    // x-axis demand (0.6), so width grows to 2/3 and height is derived as
+    // (2/3) / (4/3) = 0.5, keeping the 4:3 ratio anchored at (0.2, 0.3).
     const moved = editorReducer(started, {
       type: "MOVE",
       clientX: 200,
@@ -159,12 +164,16 @@ describe("panel resizing", () => {
       viewport,
     });
 
-    expect(moved.layout.cube).toEqual({ x: 0.2, y: 0.3, width: 0.6, height: 0.5 });
+    expect(moved.layout.cube.x).toBeCloseTo(0.2);
+    expect(moved.layout.cube.y).toBeCloseTo(0.3);
+    expect(moved.layout.cube.width).toBeCloseTo(2 / 3);
+    expect(moved.layout.cube.height).toBeCloseTo(0.5);
+    expect(moved.layout.cube.width / moved.layout.cube.height).toBeCloseTo(0.4 / 0.3);
     // The opposite corner (top-left) never moves for this handle.
     expect(moved.layout.timer).toBe(editing.layout.timer);
   });
 
-  it("resizes from the top-left handle by moving the opposite corner", () => {
+  it("resizes from the top-left handle by moving the opposite corner, preserving aspect ratio", () => {
     const layout = withLayout({ cube: { x: 0.2, y: 0.3, width: 0.4, height: 0.3 } });
     const editing = editorReducer(createEditorState(layout), { type: "TOGGLE_EDIT" });
     const started = editorReducer(editing, {
@@ -175,7 +184,11 @@ describe("panel resizing", () => {
       clientY: 0,
       viewport,
     });
-    // Move the top-left corner from (0.2, 0.3) to (0.1, 0.2).
+    // Move the top-left corner from (0.2, 0.3) to (0.1, 0.2), anchored at the
+    // fixed bottom-right corner (0.6, 0.6). Raw demand is 0.5 wide / 0.4 tall;
+    // the x-axis demand (0.5) exceeds the y-axis demand scaled by the 4:3
+    // ratio (0.4 * 4/3 = 0.5333), so width grows to 8/15 and height is
+    // derived as (8/15) / (4/3) = 0.4, keeping the 4:3 ratio.
     const moved = editorReducer(started, {
       type: "MOVE",
       clientX: -100,
@@ -183,7 +196,37 @@ describe("panel resizing", () => {
       viewport,
     });
 
-    expect(moved.layout.cube).toEqual({ x: 0.1, y: 0.2, width: 0.5, height: 0.4 });
+    expect(moved.layout.cube.x).toBeCloseTo(0.6 - 8 / 15);
+    expect(moved.layout.cube.y).toBeCloseTo(0.2);
+    expect(moved.layout.cube.width).toBeCloseTo(8 / 15);
+    expect(moved.layout.cube.height).toBeCloseTo(0.4);
+    expect(moved.layout.cube.width / moved.layout.cube.height).toBeCloseTo(0.4 / 0.3);
+  });
+
+  it("resizes leftZone/rightZone freely, without locking their aspect ratio", () => {
+    const layout = withLayout({ leftZone: { x: 0.1, y: 0.1, width: 0.3, height: 0.3 } });
+    const editing = editorReducer(createEditorState(layout), { type: "TOGGLE_EDIT" });
+    const started = editorReducer(editing, {
+      type: "START_RESIZE",
+      item: "leftZone",
+      handle: "bottom-right",
+      clientX: 0,
+      clientY: 0,
+      viewport,
+    });
+    // Move the bottom-right corner from (0.4, 0.4) to (0.7, 0.5): a much
+    // bigger horizontal move than vertical. A locked box would grow height to
+    // match (0.3 wide would demand 0.3 tall to stay square); a free-form zone
+    // must instead track each axis independently.
+    const moved = editorReducer(started, {
+      type: "MOVE",
+      clientX: 300,
+      clientY: 80,
+      viewport,
+    });
+
+    expect(moved.layout.leftZone).toEqual({ x: 0.1, y: 0.1, width: 0.6, height: 0.4 });
+    expect(moved.layout.leftZone.width / moved.layout.leftZone.height).not.toBeCloseTo(1);
   });
 });
 

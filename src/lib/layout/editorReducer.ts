@@ -1,5 +1,5 @@
 import { DEFAULT_HUD_LAYOUT } from "./defaults";
-import { clampRect, layoutEquals, minimumSizeForItem, resizeRect, snapRect } from "./geometry";
+import { clampRect, layoutEquals, minimumSizeForItem, resizeRect, resizeRectLocked, snapRect } from "./geometry";
 import { clearHudLayout, saveHudLayout } from "./storage";
 import type { HudLayout, LayoutItemId, LayoutRect, NormalizedPoint, ResizeHandle, ViewportSize } from "./types";
 
@@ -78,9 +78,12 @@ function applyMove(state: EditorState, action: Extract<EditorAction, { type: "MO
   const dx = (action.clientX - interaction.originClientX) / action.viewport.width;
   const dy = (action.clientY - interaction.originClientY) / action.viewport.height;
   const minSize = minimumSizeForItem(interaction.item);
+  const isAspectLocked =
+    interaction.item === "sidebar" || interaction.item === "timer" || interaction.item === "cube";
+  const resize = isAspectLocked ? resizeRectLocked : resizeRect;
 
   const rawRect: LayoutRect = interaction.handle
-    ? resizeRect(
+    ? resize(
         interaction.originRect,
         interaction.handle,
         {

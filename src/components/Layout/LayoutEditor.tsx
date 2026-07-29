@@ -7,6 +7,7 @@ import {
   editorReducer,
   selectShowReset,
 } from "@/lib/layout/editorReducer";
+import { mirrorHandleX, mirrorRectX } from "@/lib/layout/geometry";
 import type { HudLayout, LayoutItemId, LayoutRect, ResizeHandle } from "@/lib/layout/types";
 import styles from "./LayoutEditor.module.css";
 
@@ -17,6 +18,15 @@ const ZONE_IDS: readonly LayoutItemId[] = ["leftZone", "rightZone"];
 const OVERLAY_IDS: readonly LayoutItemId[] = [...PANEL_IDS, ...ZONE_IDS];
 const RESIZE_HANDLES: readonly ResizeHandle[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
 
+// The hand-detection zones' overlay boxes are rendered and dragged in
+// mirrored screen space (see `isMirrored`/`mirrorRectX` below) because the
+// camera preview itself is horizontally flipped via CSS. Panels are not.
+const MIRRORED_ITEMS = new Set<LayoutItemId>(["leftZone", "rightZone"]);
+
+function isMirrored(id: LayoutItemId): boolean {
+  return MIRRORED_ITEMS.has(id);
+}
+
 const HANDLE_CLASS: Record<ResizeHandle, string> = {
   "top-left": styles.handleTopLeft,
   "top-right": styles.handleTopRight,
@@ -24,9 +34,14 @@ const HANDLE_CLASS: Record<ResizeHandle, string> = {
   "bottom-right": styles.handleBottomRight,
 };
 
+// The internal keys (`leftZone`/`rightZone`) name the raw, un-mirrored
+// camera-frame rectangle. Because the preview is mirrored horizontally for
+// display, the raw `leftZone` rect actually appears on the RIGHT of the
+// screen (and, via `pad.ts`'s cross-assignment, drives the right-hand
+// state) — so the label text is intentionally the opposite of the key name.
 const ZONE_LABEL: Partial<Record<LayoutItemId, string>> = {
-  leftZone: "Left hand zone",
-  rightZone: "Right hand zone",
+  leftZone: "Right hand zone",
+  rightZone: "Left hand zone",
 };
 
 type LayoutEditorProps = {
@@ -87,12 +102,14 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
       if (!state.editing) return;
       event.stopPropagation();
       event.currentTarget.setPointerCapture(event.pointerId);
+      const viewport = currentViewport();
+      const clientX = isMirrored(item) ? viewport.width - event.clientX : event.clientX;
       dispatch({
         type: "START_DRAG",
         item,
-        clientX: event.clientX,
+        clientX,
         clientY: event.clientY,
-        viewport: currentViewport(),
+        viewport,
       });
     };
 
@@ -101,24 +118,33 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
       if (!state.editing) return;
       event.stopPropagation();
       event.currentTarget.setPointerCapture(event.pointerId);
+      const viewport = currentViewport();
+      const clientX = isMirrored(item) ? viewport.width - event.clientX : event.clientX;
+      // A mirrored (displayed) box's visually-top-left handle corresponds to
+      // the raw rectangle's top-right corner, so translate the handle too.
+      const rawHandle = isMirrored(item) ? mirrorHandleX(handle) : handle;
       dispatch({
         type: "START_RESIZE",
         item,
-        handle,
-        clientX: event.clientX,
+        handle: rawHandle,
+        clientX,
         clientY: event.clientY,
-        viewport: currentViewport(),
+        viewport,
       });
     };
 
   const handleMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!state.interaction) return;
     event.stopPropagation();
+    const viewport = currentViewport();
+    const clientX = isMirrored(state.interaction.item)
+      ? viewport.width - event.clientX
+      : event.clientX;
     dispatch({
       type: "MOVE",
-      clientX: event.clientX,
+      clientX,
       clientY: event.clientY,
-      viewport: currentViewport(),
+      viewport,
     });
   };
 
@@ -154,11 +180,13 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
               .filter(Boolean)
               .join(" ");
 
+            const displayRect = isMirrored(id) ? mirrorRectX(state.layout[id]) : state.layout[id];
+
             return (
               <div
                 key={id}
                 className={overlayClassName}
-                style={rectStyle(state.layout[id])}
+                style={rectStyle(displayRect)}
                 onPointerDown={startDrag(id)}
                 onPointerMove={handleMove}
                 onPointerUp={endInteraction}

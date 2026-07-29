@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   clampRect,
   layoutEquals,
+  mirrorHandleX,
+  mirrorRectX,
   resizeRect,
+  resizeRectLocked,
   snapRect,
   zoneRectFromLayout,
 } from "./geometry";
@@ -47,6 +50,77 @@ describe("resizeRect", () => {
   });
 });
 
+describe("resizeRectLocked", () => {
+  const rect = { x: 0.2, y: 0.3, width: 0.4, height: 0.3 }; // aspect = 4/3
+  const aspect = rect.width / rect.height;
+
+  it("preserves aspect ratio when dragging directly along the diagonal", () => {
+    // Anchor (top-left, opposite bottom-right) is (0.2, 0.3). Scaling the box
+    // by 1.5x along the diagonal should land exactly on the scaled rect.
+    const point = { x: 0.2 + rect.width * 1.5, y: 0.3 + rect.height * 1.5 };
+    expect(resizeRectLocked(rect, "bottom-right", point)).toEqual({
+      x: 0.2,
+      y: 0.3,
+      width: 0.6,
+      height: 0.45,
+    });
+  });
+
+  it("scales the other dimension to preserve aspect ratio for a mostly one-axis drag", () => {
+    // Pointer moves far in x (anchor.x + 0.7) but barely in y (anchor.y + 0.02).
+    // A distorted resize would produce height ~= 0.02; the locked resize must
+    // instead derive height from the original 4:3 ratio.
+    const point = { x: 0.2 + 0.7, y: 0.3 + 0.02 };
+    const result = resizeRectLocked(rect, "bottom-right", point);
+    expect(result.width).toBeCloseTo(0.7);
+    expect(result.height).toBeCloseTo(0.7 / aspect);
+    expect(result.width / result.height).toBeCloseTo(aspect);
+  });
+
+  it("preserves aspect ratio even when the minimum-size floor binds", () => {
+    // Pointer barely moves off the anchor, well under both minimums. Height's
+    // floor (0.1) demands a wider box (0.1 * 4/3 = 0.1333) than width's own
+    // floor (0.1), so that binds and both dimensions are derived from it.
+    const point = { x: 0.2 + 0.05, y: 0.3 + 0.02 };
+    const result = resizeRectLocked(rect, "bottom-right", point, 0.1, 0.1);
+    expect(result.height).toBeCloseTo(0.1);
+    expect(result.width).toBeCloseTo(0.1 * aspect);
+    expect(result.width / result.height).toBeCloseTo(aspect);
+  });
+
+  it.each([
+    // Points chosen so the resulting box stays within the unit square (no
+    // clamping), which would otherwise disturb the anchor and confound this
+    // assertion — clamp-induced distortion at the viewport edge is a
+    // separate, acceptable edge case (see resizeRectLocked's doc comment).
+    ["top-left", { x: 0.1, y: 0.2 }],
+    ["top-right", { x: 0.8, y: 0.2 }],
+    ["bottom-left", { x: 0.3, y: 0.7 }],
+    ["bottom-right", { x: 0.7, y: 0.8 }],
+  ] as const)("anchors the opposite corner in place for the %s handle", (handle, point) => {
+    const result = resizeRectLocked(rect, handle, point);
+    switch (handle) {
+      case "top-left":
+        expect(result.x + result.width).toBeCloseTo(rect.x + rect.width);
+        expect(result.y + result.height).toBeCloseTo(rect.y + rect.height);
+        break;
+      case "top-right":
+        expect(result.x).toBeCloseTo(rect.x);
+        expect(result.y + result.height).toBeCloseTo(rect.y + rect.height);
+        break;
+      case "bottom-left":
+        expect(result.x + result.width).toBeCloseTo(rect.x + rect.width);
+        expect(result.y).toBeCloseTo(rect.y);
+        break;
+      case "bottom-right":
+        expect(result.x).toBeCloseTo(rect.x);
+        expect(result.y).toBeCloseTo(rect.y);
+        break;
+    }
+    expect(result.width / result.height).toBeCloseTo(aspect);
+  });
+});
+
 describe("snapRect", () => {
   const viewport = { width: 1000, height: 800 };
 
@@ -88,5 +162,46 @@ describe("layout helpers", () => {
       x1: rect.x + rect.width,
       y1: rect.y + rect.height,
     });
+  });
+});
+
+describe("mirrorRectX", () => {
+  it.each([
+    { x: 0.1, y: 0.2, width: 0.3, height: 0.4 },
+    { x: 0, y: 0.5, width: 0.2, height: 0.1 },
+    { x: 0.6, y: 0.7, width: 0.35, height: 0.3 },
+  ])("is self-inverse for %o", (rect) => {
+    const roundTripped = mirrorRectX(mirrorRectX(rect));
+    expect(roundTripped.x).toBeCloseTo(rect.x);
+    expect(roundTripped.y).toBeCloseTo(rect.y);
+    expect(roundTripped.width).toBeCloseTo(rect.width);
+    expect(roundTripped.height).toBeCloseTo(rect.height);
+  });
+
+  it("maps the default leftZone rect to the default rightZone position", () => {
+    // Sanity check: the two default zones are symmetric across the vertical
+    // midline, so mirroring one should exactly reproduce the other's numbers.
+    expect(mirrorRectX(DEFAULT_HUD_LAYOUT.leftZone)).toEqual({
+      x: 0.6,
+      y: 0.7,
+      width: 0.35,
+      height: 0.3,
+    });
+  });
+});
+
+describe("mirrorHandleX", () => {
+  it("swaps left and right corner handles, leaving the vertical axis alone", () => {
+    expect(mirrorHandleX("top-left")).toBe("top-right");
+    expect(mirrorHandleX("top-right")).toBe("top-left");
+    expect(mirrorHandleX("bottom-left")).toBe("bottom-right");
+    expect(mirrorHandleX("bottom-right")).toBe("bottom-left");
+  });
+
+  it("is self-inverse", () => {
+    const handles = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+    for (const handle of handles) {
+      expect(mirrorHandleX(mirrorHandleX(handle))).toBe(handle);
+    }
   });
 });

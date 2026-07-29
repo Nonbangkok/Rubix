@@ -105,6 +105,53 @@ export function resizeRect(
   }
 }
 
+/** The corner diagonally opposite a given resize handle, in absolute coordinates. */
+function anchorPoint(rect: LayoutRect, handle: ResizeHandle): NormalizedPoint {
+  return {
+    x: handle === "top-right" || handle === "bottom-right" ? rect.x : rect.x + rect.width,
+    y: handle === "bottom-left" || handle === "bottom-right" ? rect.y : rect.y + rect.height,
+  };
+}
+
+/**
+ * Resizes one corner while keeping the diagonally opposite corner fixed AND
+ * preserving the aspect ratio of the ORIGINAL rectangle (`rect`, expected to be
+ * the rect at drag start, e.g. `interaction.originRect`).
+ */
+export function resizeRectLocked(
+  rect: LayoutRect,
+  handle: ResizeHandle,
+  point: NormalizedPoint,
+  minWidth = MIN_PANEL_SIZE,
+  minHeight = minWidth,
+): LayoutRect {
+  const aspect = rect.width / rect.height;
+  const widthFloor = minimumSize(minWidth);
+  const heightFloor = minimumSize(minHeight);
+  const anchor = anchorPoint(rect, handle);
+  const pointX = finiteOr(point.x, anchor.x);
+  const pointY = finiteOr(point.y, anchor.y);
+
+  const rawWidth = Math.abs(pointX - anchor.x);
+  const rawHeight = Math.abs(pointY - anchor.y);
+
+  let width = Math.max(rawWidth, rawHeight * aspect);
+  let height = width / aspect;
+
+  // Enforce minimums, deriving both dimensions from whichever floor binds harder.
+  const widthFromHeightFloor = heightFloor * aspect;
+  const floorWidth = Math.max(widthFloor, widthFromHeightFloor);
+  if (width < floorWidth) {
+    width = floorWidth;
+    height = width / aspect;
+  }
+
+  const left = handle === "top-left" || handle === "bottom-left" ? anchor.x - width : anchor.x;
+  const top = handle === "top-left" || handle === "top-right" ? anchor.y - height : anchor.y;
+
+  return clampRect({ x: left, y: top, width, height }, minWidth, minHeight);
+}
+
 /** Snaps a rectangle near a corner or edge centre, preserving its dimensions. */
 export function snapRect(rect: LayoutRect, viewport: ViewportSize): LayoutRect {
   const current = clampRect(rect);
@@ -146,6 +193,31 @@ export function snapRect(rect: LayoutRect, viewport: ViewportSize): LayoutRect {
   return nearest && nearest.distance <= SNAP_THRESHOLD_PX
     ? roundedRect({ ...current, x: nearest.x, y: nearest.y })
     : current;
+}
+
+/**
+ * Mirrors a rectangle horizontally within the unit square. Used to translate
+ * between a zone's raw (un-mirrored, camera-frame) rectangle and the
+ * mirrored on-screen position it actually appears at (see `VisionPreview`'s
+ * `-scale-x-100` transform). Self-inverse: applying it twice returns the
+ * original rectangle.
+ */
+export function mirrorRectX(rect: LayoutRect): LayoutRect {
+  return { x: 1 - rect.x - rect.width, y: rect.y, width: rect.width, height: rect.height };
+}
+
+/** Swaps a resize handle's horizontal side, leaving the vertical axis untouched. */
+export function mirrorHandleX(handle: ResizeHandle): ResizeHandle {
+  switch (handle) {
+    case "top-left":
+      return "top-right";
+    case "top-right":
+      return "top-left";
+    case "bottom-left":
+      return "bottom-right";
+    case "bottom-right":
+      return "bottom-left";
+  }
 }
 
 export function zoneRectFromLayout(rect: LayoutRect): ZoneRect {
