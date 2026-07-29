@@ -132,6 +132,69 @@ function sidebarDisplayRect(rect: LayoutRect, natural: Size, viewport: Size): La
   return { x: rect.x, y: rect.y, width: rect.width, height: natural.height / viewport.height };
 }
 
+const RECT_EPSILON = 1e-6;
+
+function rectsClose(a: LayoutRect, b: LayoutRect): boolean {
+  return (
+    Math.abs(a.x - b.x) < RECT_EPSILON &&
+    Math.abs(a.y - b.y) < RECT_EPSILON &&
+    Math.abs(a.width - b.width) < RECT_EPSILON &&
+    Math.abs(a.height - b.height) < RECT_EPSILON
+  );
+}
+
+/**
+ * Self-heals a saved rect whose aspect ratio doesn't exactly match the
+ * panel's true measured content ratio (e.g. an imprecise default, or one
+ * saved before `resizeRectLocked` started accepting an aspect override) so
+ * it always matches what's actually rendered — without this, dragging
+ * (rather than resizing) a still-imprecise panel toward a screen edge would
+ * always stop visibly short of it, since only a *resize* recomputes the
+ * rect from the true aspect ratio.
+ *
+ * Depends on the rect's own fields (not just natural size/viewport) so it
+ * re-checks after `layout` is replaced by the localStorage hydration effect
+ * (which can happen after natural size is first measured, overwriting an
+ * already-corrected default with a still-imprecise saved value). This can't
+ * loop or fight an in-progress drag: it's a no-op once `corrected` already
+ * matches the current rect, which — since correcting an already-correct
+ * rect is a fixed point of this formula — is true immediately after any
+ * correction, and true throughout a drag/resize once a panel has been
+ * corrected once (position-only moves don't change width/height, and
+ * aspect-locked resizes already keep the true ratio via `resizeRectLocked`'s
+ * `aspectOverride`).
+ */
+function useAspectSelfHeal(
+  panelId: "timer" | "cube",
+  rect: LayoutRect,
+  natural: Size,
+  viewport: Size,
+  setLayout: (updater: (prev: HudLayout) => HudLayout) => void,
+) {
+  useEffect(() => {
+    if (!natural.width || !natural.height || !viewport.width || !viewport.height) return;
+    setLayout((prev) => {
+      const current = prev[panelId];
+      const scale = panelScale(current, natural, viewport);
+      const corrected = panelDisplayRect(current, natural, scale, viewport);
+      if (!corrected || rectsClose(corrected, current)) return prev;
+      return { ...prev, [panelId]: corrected };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    panelId,
+    rect.x,
+    rect.y,
+    rect.width,
+    rect.height,
+    natural.width,
+    natural.height,
+    viewport.width,
+    viewport.height,
+    setLayout,
+  ]);
+}
+
 export function TimerView() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [layout, setLayout] = useState<HudLayout>(DEFAULT_HUD_LAYOUT);
@@ -159,6 +222,9 @@ export function TimerView() {
   const sidebarNatural = useNaturalSize(sidebarRef);
   const timerNatural = useNaturalSize(timerRef);
   const cubeNatural = useNaturalSize(cubeRef);
+
+  useAspectSelfHeal("timer", layout.timer, timerNatural, viewport, setLayout);
+  useAspectSelfHeal("cube", layout.cube, cubeNatural, viewport, setLayout);
 
   const timerScale = panelScale(layout.timer, timerNatural, viewport);
   const cubeScale = panelScale(layout.cube, cubeNatural, viewport);
