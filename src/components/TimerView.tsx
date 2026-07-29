@@ -53,6 +53,42 @@ function useNaturalSize(ref: RefObject<HTMLElement | null>): Size {
   return size;
 }
 
+// Timer/cube's natural size must stay stable across content that changes
+// shape internally without the panel itself being resized — e.g. CubePanel's
+// NET vs 3D tabs have different intrinsic heights, and switching between
+// them would otherwise shrink/grow the whole panel's rendered scale, which
+// looks like an unrelated resize happened. Track the largest width/height
+// ever measured (independently per axis) instead of whatever's currently
+// measured, so the panel's footprint only reflects genuine layout changes
+// (a real HUD resize, or the viewport itself resizing), not a tab switch.
+function useStableNaturalSize(ref: RefObject<HTMLElement | null>): Size {
+  const [size, setSize] = useState<Size>(ZERO_SIZE);
+  const maxSeen = useRef<Size>(ZERO_SIZE);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const box = entry.borderBoxSize?.[0];
+      const measured = box
+        ? { width: box.inlineSize, height: box.blockSize }
+        : { width: entry.contentRect.width, height: entry.contentRect.height };
+      const next = {
+        width: Math.max(maxSeen.current.width, measured.width),
+        height: Math.max(maxSeen.current.height, measured.height),
+      };
+      maxSeen.current = next;
+      setSize(next);
+    });
+    observer.observe(el, { box: "border-box" });
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return size;
+}
+
 function useViewportSize(): Size {
   const [size, setSize] = useState<Size>(ZERO_SIZE);
 
@@ -231,8 +267,8 @@ export function TimerView() {
   const timerRef = useRef<HTMLElement | null>(null);
   const cubeRef = useRef<HTMLElement | null>(null);
   const sidebarNatural = useNaturalSize(sidebarRef);
-  const timerNatural = useNaturalSize(timerRef);
-  const cubeNatural = useNaturalSize(cubeRef);
+  const timerNatural = useStableNaturalSize(timerRef);
+  const cubeNatural = useStableNaturalSize(cubeRef);
 
   useAspectSelfHeal("timer", layout.timer, timerNatural, viewport, setLayout);
   useAspectSelfHeal("cube", layout.cube, cubeNatural, viewport, setLayout, "right");
