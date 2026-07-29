@@ -66,6 +66,29 @@ function useViewportSize(): Size {
   return size;
 }
 
+// The camera's native resolution, needed so LayoutEditor can correctly place
+// the hand-detection zone overlays under VisionPreview's `object-cover`
+// video (see LayoutEditor's `cameraSize` prop). Unknown (zero) until the
+// stream actually starts.
+function useVideoSize(videoRef: RefObject<HTMLVideoElement | null>): Size {
+  const [size, setSize] = useState<Size>(ZERO_SIZE);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const update = () => {
+      if (video.videoWidth && video.videoHeight) {
+        setSize({ width: video.videoWidth, height: video.videoHeight });
+      }
+    };
+    update();
+    video.addEventListener("loadedmetadata", update);
+    return () => video.removeEventListener("loadedmetadata", update);
+  }, [videoRef]);
+
+  return size;
+}
+
 function scaleStyle(rect: LayoutRect, natural: Size, viewport: Size): CSSProperties {
   if (!natural.width || !natural.height || !viewport.width || !viewport.height) {
     // Not measured yet (e.g. first paint) — render at natural size rather
@@ -74,7 +97,13 @@ function scaleStyle(rect: LayoutRect, natural: Size, viewport: Size): CSSPropert
   }
   const scaleX = (rect.width * viewport.width) / natural.width;
   const scaleY = (rect.height * viewport.height) / natural.height;
-  return { transform: `scale(${scaleX}, ${scaleY})`, transformOrigin: "top left" };
+  // A single uniform factor, not independent scaleX/scaleY: panels are
+  // aspect-locked when resized, but the saved rect's ratio can still differ
+  // slightly from the content's true measured ratio, and scaling each axis
+  // independently would stretch circles into ellipses. `min` keeps the
+  // content fully inside the target box rather than overflowing it.
+  const scale = Math.min(scaleX, scaleY);
+  return { transform: `scale(${scale})`, transformOrigin: "top left" };
 }
 
 export function TimerView() {
@@ -97,6 +126,7 @@ export function TimerView() {
   const focusMode = phase === "RUNNING";
 
   const viewport = useViewportSize();
+  const videoSize = useVideoSize(videoRef);
   const timerRef = useRef<HTMLElement | null>(null);
   const cubeRef = useRef<HTMLElement | null>(null);
   const timerNatural = useNaturalSize(timerRef);
@@ -118,6 +148,7 @@ export function TimerView() {
         layout={layout}
         onLayoutChange={setLayout}
         disabled={!canEditLayout(phase)}
+        cameraSize={videoSize.width && videoSize.height ? videoSize : undefined}
       >
         {(itemStyle) => (
           <>

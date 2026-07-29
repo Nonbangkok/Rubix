@@ -1,4 +1,5 @@
 import type {
+  CameraMapping,
   HudLayout,
   LayoutItemId,
   LayoutRect,
@@ -244,6 +245,67 @@ export function mirrorHandleX(handle: ResizeHandle): ResizeHandle {
     case "bottom-right":
       return "bottom-left";
   }
+}
+
+/**
+ * How much `VisionPreview`'s `object-cover` video/canvas scales the native
+ * camera frame to fill the viewport box, and by how much each axis is
+ * cropped as a result (the axis that does NOT drive the scale factor).
+ */
+function coverGeometry(cam: CameraMapping) {
+  const scale = Math.max(cam.viewportWidth / cam.videoWidth, cam.viewportHeight / cam.videoHeight);
+  const offsetX = (cam.videoWidth * scale - cam.viewportWidth) / 2;
+  const offsetY = (cam.videoHeight * scale - cam.viewportHeight) / 2;
+  return { scale, offsetX, offsetY };
+}
+
+/**
+ * Maps a rectangle from raw camera-frame fractions (the space `HudLayout`
+ * zones and MediaPipe landmarks share) to the mirrored, `object-cover`-
+ * cropped screen fraction it actually appears at. `mirrorRectX` alone is
+ * only correct when the camera's native aspect ratio matches the viewport's
+ * (no cropping); this generalizes it to account for the crop too — passing
+ * a mapping where `videoWidth/videoHeight` equal `viewportWidth/viewportHeight`
+ * reduces this to exactly `mirrorRectX`.
+ */
+export function cameraRectToScreenRect(rect: LayoutRect, cam: CameraMapping): LayoutRect {
+  const { scale, offsetX, offsetY } = coverGeometry(cam);
+
+  const boxX0 = rect.x * cam.videoWidth * scale - offsetX;
+  const boxX1 = (rect.x + rect.width) * cam.videoWidth * scale - offsetX;
+  const boxY0 = rect.y * cam.videoHeight * scale - offsetY;
+  const boxY1 = (rect.y + rect.height) * cam.videoHeight * scale - offsetY;
+
+  // Mirror horizontally within the viewport-sized box (the video/canvas
+  // element's own box always equals the viewport — `object-cover` only
+  // affects how its content fills that box, so the mirror transform, which
+  // applies to the whole element, flips around the viewport's own center).
+  const screenX0 = cam.viewportWidth - boxX1;
+  const screenX1 = cam.viewportWidth - boxX0;
+
+  return {
+    x: screenX0 / cam.viewportWidth,
+    y: boxY0 / cam.viewportHeight,
+    width: (screenX1 - screenX0) / cam.viewportWidth,
+    height: (boxY1 - boxY0) / cam.viewportHeight,
+  };
+}
+
+/** Inverse of `cameraRectToScreenRect` for a single point — converts a
+ * pointer position given as a screen fraction back into the camera-frame
+ * fraction space `HudLayout.leftZone`/`rightZone` are stored in. */
+export function screenPointToCameraPoint(point: NormalizedPoint, cam: CameraMapping): NormalizedPoint {
+  const { scale, offsetX, offsetY } = coverGeometry(cam);
+
+  const screenX = point.x * cam.viewportWidth;
+  const screenY = point.y * cam.viewportHeight;
+  const boxX = cam.viewportWidth - screenX; // undo the mirror
+  const boxY = screenY;
+
+  return {
+    x: (boxX + offsetX) / (cam.videoWidth * scale),
+    y: (boxY + offsetY) / (cam.videoHeight * scale),
+  };
 }
 
 export function zoneRectFromLayout(rect: LayoutRect): ZoneRect {

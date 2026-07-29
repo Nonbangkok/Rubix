@@ -7,8 +7,20 @@ import {
   editorReducer,
   selectShowReset,
 } from "@/lib/layout/editorReducer";
-import { mirrorHandleX, mirrorRectX } from "@/lib/layout/geometry";
-import type { HudLayout, LayoutItemId, LayoutRect, ResizeHandle } from "@/lib/layout/types";
+import {
+  cameraRectToScreenRect,
+  mirrorHandleX,
+  mirrorRectX,
+  screenPointToCameraPoint,
+} from "@/lib/layout/geometry";
+import type {
+  CameraMapping,
+  HudLayout,
+  LayoutItemId,
+  LayoutRect,
+  ResizeHandle,
+  ViewportSize,
+} from "@/lib/layout/types";
 import styles from "./LayoutEditor.module.css";
 
 type PanelId = "sidebar" | "timer" | "cube";
@@ -48,6 +60,10 @@ type LayoutEditorProps = {
   layout: HudLayout;
   onLayoutChange: (layout: HudLayout) => void;
   disabled: boolean;
+  /** The camera's native resolution, once known (see `VisionPreview`'s
+   * `object-cover`). Until it's measured, zone editing falls back to a
+   * plain mirror with no crop correction. */
+  cameraSize?: { width: number; height: number };
   children: (itemStyle: (id: PanelId) => CSSProperties) => ReactNode;
 };
 
@@ -65,6 +81,30 @@ function currentViewport() {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
+/**
+ * Converts a real screen pointer position into the pixel-space the reducer
+ * expects for a mirrored (zone) item, so its existing
+ * `(clientX - originClientX) / viewport.width` delta math yields the
+ * correct movement in camera-frame fraction units. Without a known camera
+ * size this is a plain mirror (`viewportWidth - clientX`); with one, it
+ * additionally undoes `object-cover`'s crop via `screenPointToCameraPoint`.
+ */
+function toMirroredReducerPoint(
+  clientX: number,
+  clientY: number,
+  viewport: ViewportSize,
+  cam: CameraMapping | null,
+): { x: number; y: number } {
+  if (!cam) {
+    return { x: viewport.width - clientX, y: clientY };
+  }
+  const cameraPoint = screenPointToCameraPoint(
+    { x: clientX / viewport.width, y: clientY / viewport.height },
+    cam,
+  );
+  return { x: cameraPoint.x * viewport.width, y: cameraPoint.y * viewport.height };
+}
+
 // Panel content (sidebar/timer/cube) is sized internally in vmin units,
 // independent of this wrapper's box. This only positions the wrapper;
 // TimerView measures each panel's natural rendered size and applies its
@@ -79,7 +119,13 @@ function panelPositionStyle(rect: LayoutRect): CSSProperties {
   };
 }
 
-export function LayoutEditor({ layout, onLayoutChange, disabled, children }: LayoutEditorProps) {
+export function LayoutEditor({
+  layout,
+  onLayoutChange,
+  disabled,
+  cameraSize,
+  children,
+}: LayoutEditorProps) {
   const [state, dispatch] = useReducer(editorReducer, undefined, () =>
     createEditorState(layout, disabled),
   );
@@ -111,18 +157,30 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
 
   const itemStyle = (id: PanelId): CSSProperties => panelPositionStyle(state.layout[id]);
 
+  const cameraMapping = (viewport: ViewportSize): CameraMapping | null =>
+    cameraSize
+      ? {
+          videoWidth: cameraSize.width,
+          videoHeight: cameraSize.height,
+          viewportWidth: viewport.width,
+          viewportHeight: viewport.height,
+        }
+      : null;
+
   const startDrag =
     (item: LayoutItemId) => (event: ReactPointerEvent<HTMLDivElement>) => {
       if (!state.editing) return;
       event.stopPropagation();
       event.currentTarget.setPointerCapture(event.pointerId);
       const viewport = currentViewport();
-      const clientX = isMirrored(item) ? viewport.width - event.clientX : event.clientX;
+      const point = isMirrored(item)
+        ? toMirroredReducerPoint(event.clientX, event.clientY, viewport, cameraMapping(viewport))
+        : { x: event.clientX, y: event.clientY };
       dispatch({
         type: "START_DRAG",
         item,
-        clientX,
-        clientY: event.clientY,
+        clientX: point.x,
+        clientY: point.y,
         viewport,
       });
     };
@@ -133,7 +191,9 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
       event.stopPropagation();
       event.currentTarget.setPointerCapture(event.pointerId);
       const viewport = currentViewport();
-      const clientX = isMirrored(item) ? viewport.width - event.clientX : event.clientX;
+      const point = isMirrored(item)
+        ? toMirroredReducerPoint(event.clientX, event.clientY, viewport, cameraMapping(viewport))
+        : { x: event.clientX, y: event.clientY };
       // A mirrored (displayed) box's visually-top-left handle corresponds to
       // the raw rectangle's top-right corner, so translate the handle too.
       const rawHandle = isMirrored(item) ? mirrorHandleX(handle) : handle;
@@ -141,8 +201,8 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
         type: "START_RESIZE",
         item,
         handle: rawHandle,
-        clientX,
-        clientY: event.clientY,
+        clientX: point.x,
+        clientY: point.y,
         viewport,
       });
     };
@@ -151,13 +211,13 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
     if (!state.interaction) return;
     event.stopPropagation();
     const viewport = currentViewport();
-    const clientX = isMirrored(state.interaction.item)
-      ? viewport.width - event.clientX
-      : event.clientX;
+    const point = isMirrored(state.interaction.item)
+      ? toMirroredReducerPoint(event.clientX, event.clientY, viewport, cameraMapping(viewport))
+      : { x: event.clientX, y: event.clientY };
     dispatch({
       type: "MOVE",
-      clientX,
-      clientY: event.clientY,
+      clientX: point.x,
+      clientY: point.y,
       viewport,
     });
   };
@@ -174,6 +234,11 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
   };
 
   const showReset = selectShowReset(state);
+
+  const zoneDisplayRect = (id: LayoutItemId): LayoutRect => {
+    const cam = cameraMapping(currentViewport());
+    return cam ? cameraRectToScreenRect(state.layout[id], cam) : mirrorRectX(state.layout[id]);
+  };
 
   return (
     <>
@@ -194,7 +259,7 @@ export function LayoutEditor({ layout, onLayoutChange, disabled, children }: Lay
               .filter(Boolean)
               .join(" ");
 
-            const displayRect = isMirrored(id) ? mirrorRectX(state.layout[id]) : state.layout[id];
+            const displayRect = isMirrored(id) ? zoneDisplayRect(id) : state.layout[id];
 
             return (
               <div

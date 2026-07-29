@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cameraRectToScreenRect,
   clampRect,
   layoutEquals,
   mirrorHandleX,
@@ -7,6 +8,7 @@ import {
   resizeRect,
   resizeRectLocked,
   resizeRectWidthOnly,
+  screenPointToCameraPoint,
   snapRect,
   zoneRectFromLayout,
 } from "./geometry";
@@ -235,5 +237,54 @@ describe("mirrorHandleX", () => {
     for (const handle of handles) {
       expect(mirrorHandleX(mirrorHandleX(handle))).toBe(handle);
     }
+  });
+});
+
+describe("cameraRectToScreenRect", () => {
+  it("reduces to mirrorRectX when the camera's aspect ratio matches the viewport's (no crop)", () => {
+    const rect = { x: 0.05, y: 0.7, width: 0.35, height: 0.3 };
+    const cam = { videoWidth: 1280, videoHeight: 720, viewportWidth: 1280, viewportHeight: 720 };
+    const result = cameraRectToScreenRect(rect, cam);
+    const expected = mirrorRectX(rect);
+    expect(result.x).toBeCloseTo(expected.x);
+    expect(result.y).toBeCloseTo(expected.y);
+    expect(result.width).toBeCloseTo(expected.width);
+    expect(result.height).toBeCloseTo(expected.height);
+  });
+
+  it("accounts for object-cover cropping when the viewport is a different aspect ratio", () => {
+    // 1280x720 (16:9) video into an 800x800 (1:1) viewport: object-cover scales
+    // by max(800/1280, 800/720) = 10/9, filling height exactly and cropping the
+    // sides — so a rect centered on the camera frame stays centered on screen,
+    // but a width-only rect's fraction grows (the cropped axis is "zoomed in"
+    // relative to the viewport), while a rect on the uncropped (height) axis
+    // keeps its fraction unchanged.
+    const cam = { videoWidth: 1280, videoHeight: 720, viewportWidth: 800, viewportHeight: 800 };
+    const rect = { x: 0.45, y: 0.45, width: 0.1, height: 0.1 };
+    const result = cameraRectToScreenRect(rect, cam);
+
+    expect(result.y).toBeCloseTo(0.45); // height axis: unchanged, no crop
+    expect(result.height).toBeCloseTo(0.1);
+    expect(result.x + result.width / 2).toBeCloseTo(0.5); // still centered on screen
+    expect(result.width).toBeGreaterThan(rect.width); // cropped axis reads "zoomed in"
+  });
+});
+
+describe("screenPointToCameraPoint", () => {
+  const cam = { videoWidth: 1280, videoHeight: 720, viewportWidth: 800, viewportHeight: 800 };
+
+  it("round-trips with cameraRectToScreenRect for a point", () => {
+    const cameraPoint = { x: 0.3, y: 0.6 };
+    const rect = { ...cameraPoint, width: 0, height: 0 };
+    const screenRect = cameraRectToScreenRect(rect, cam);
+    const roundTripped = screenPointToCameraPoint({ x: screenRect.x, y: screenRect.y }, cam);
+    expect(roundTripped.x).toBeCloseTo(cameraPoint.x);
+    expect(roundTripped.y).toBeCloseTo(cameraPoint.y);
+  });
+
+  it("maps the screen center to the camera-frame center", () => {
+    const result = screenPointToCameraPoint({ x: 0.5, y: 0.5 }, cam);
+    expect(result.x).toBeCloseTo(0.5);
+    expect(result.y).toBeCloseTo(0.5);
   });
 });

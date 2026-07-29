@@ -26,3 +26,16 @@ export type ZoneRect = {
 };
 
 export const LAYOUT_ITEM_IDS = ["sidebar", "timer", "cube", "leftZone", "rightZone"] as const;
+
+/**
+ * Describes how the camera feed's native frame maps onto the viewport,
+ * needed to correctly place hand-detection zones on screen: `VisionPreview`
+ * renders the video/canvas with `object-cover`, which uniformly scales the
+ * native frame and crops whichever axis overflows the viewport box.
+ */
+export type CameraMapping = {
+  videoWidth: number;
+  videoHeight: number;
+  viewportWidth: number;
+  viewportHeight: number;
+};
