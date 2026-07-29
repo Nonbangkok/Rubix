@@ -170,19 +170,30 @@ function useAspectSelfHeal(
   natural: Size,
   viewport: Size,
   setLayout: (updater: (prev: HudLayout) => HudLayout) => void,
+  // Which horizontal edge to keep fixed when the correction shrinks the
+  // width: "left" preserves `x` (timer), "right" preserves `x + width` (the
+  // cube's default position is flush against the right screen edge, and
+  // should stay flush there even if the natural aspect ratio means only the
+  // width, not the height, needs correcting).
+  xAnchor: "left" | "right" = "left",
 ) {
   useEffect(() => {
     if (!natural.width || !natural.height || !viewport.width || !viewport.height) return;
     setLayout((prev) => {
       const current = prev[panelId];
       const scale = panelScale(current, natural, viewport);
-      const corrected = panelDisplayRect(current, natural, scale, viewport);
-      if (!corrected || rectsClose(corrected, current)) return prev;
+      if (scale === null) return prev;
+      const width = (natural.width * scale) / viewport.width;
+      const height = (natural.height * scale) / viewport.height;
+      const x = xAnchor === "right" ? current.x + current.width - width : current.x;
+      const corrected: LayoutRect = { x, y: current.y, width, height };
+      if (rectsClose(corrected, current)) return prev;
       return { ...prev, [panelId]: corrected };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     panelId,
+    xAnchor,
     rect.x,
     rect.y,
     rect.width,
@@ -224,7 +235,7 @@ export function TimerView() {
   const cubeNatural = useNaturalSize(cubeRef);
 
   useAspectSelfHeal("timer", layout.timer, timerNatural, viewport, setLayout);
-  useAspectSelfHeal("cube", layout.cube, cubeNatural, viewport, setLayout);
+  useAspectSelfHeal("cube", layout.cube, cubeNatural, viewport, setLayout, "right");
 
   const timerScale = panelScale(layout.timer, timerNatural, viewport);
   const cubeScale = panelScale(layout.cube, cubeNatural, viewport);
