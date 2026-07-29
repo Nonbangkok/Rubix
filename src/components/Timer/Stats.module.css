@@ -1,8 +1,8 @@
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-5);
-  padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(var(--blur-md)) saturate(1.2);
   -webkit-backdrop-filter: blur(var(--blur-md)) saturate(1.2);
@@ -17,13 +17,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-1);
+  gap: 0.2em;
 }
 
 .label {
   font-family: var(--font-display), monospace;
   font-size: var(--fs-2xs);
-  letter-spacing: 0.3em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: rgba(230, 240, 255, 0.4);
 }
